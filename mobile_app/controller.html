@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Supercar FPV Controller</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; background: #0b0c10; color: #e0e0e0;
+               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+               touch-action: none; overflow: hidden; }
+  .status { position: absolute; top: 6px; left: 6px; right: 6px; z-index: 40;
+            display: flex; justify-content: space-between; font-size: 12px; pointer-events: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; display: inline-block; }
+  .dot.on { background: #0f0; box-shadow: 0 0 6px #0f0; }
+
+  /* Video + Controls Layout */
+  .app { display: flex; flex-direction: column; height: 100%; position: relative; }
+  .video-wrap { position: relative; flex: 1; background: #000; display: flex;
+                align-items: center; justify-content: center; overflow: hidden; }
+  .video-wrap img { display: block; max-width: 100%; max-height: 100%; }
+  .video-wrap .offline { position: absolute; color: #888; font-size: 14px; }
+
+  .controls { display: grid; grid-template-columns: 1fr 1fr; height: 40vh; gap: 0; }
+  .panel { display: flex; flex-direction: column; align-items: center; justify-content: center;
+           padding: 8px; border: 1px solid #222; }
+  .panel.left { border-right: none; }
+  .panel.right { border-left: none; }
+
+  .joy { position: relative; width: 150px; height: 150px; border-radius: 50%;
+         background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12);
+         touch-action: none; }
+  .joy .base { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+               width: 44px; height: 44px; border-radius: 50%; background: #0f0;
+               box-shadow: 0 0 14px #0f0, inset 0 0 6px rgba(0,0,0,0.4); }
+  .joy .deadzone { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+                   width: 30px; height: 30px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.25); }
+
+  .label { margin-top: 8px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+           color: #888; }
+  .value { font-size: 11px; font-family: monospace; color: #aaa; margin-top: 2px; }
+
+  /* Buttons Row */
+  .btnrow { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #12141b;
+            border-top: 1px solid #222; z-index: 30; }
+  button { flex: 1; padding: 10px 6px; border: none; border-radius: 10px; background: #1f222d;
+           color: #e0e0e0; font-size: 13px; font-weight: 700; cursor: pointer;
+           border: 1px solid #333; touch-action: manipulation; }
+  button:active { background: #2a2e3c; }
+  button.primary { background: #0e6363; border-color: #149187; color: #fff; }
+  button.primary:active { background: #149187; }
+  button.danger { background: #6b1a1a; border-color: #9a2a2a; color: #ffc0c0; }
+  button.danger:active { background: #9a2a2a; }
+  button.active { background: #0f0; color: #000; border-color: #0f0; box-shadow: 0 0 10px #0f0; }
+
+  /* Sliders */
+  .slider-row { display: flex; align-items: center; gap: 10px; padding: 6px; background: #12141b;
+                border-top: 1px solid #222; }
+  .slider-row label { font-size: 11px; color: #888; width: 52px; }
+  input[type=range] { flex: 1; accent-color: #0f0; }
+
+  .hint { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center;
+          font-size: 11px; color: #555; pointer-events: none; z-index: 20; }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <span id="connStat"><span class="dot" id="connDot"></span> DISCONNECTED</span>
+  <span id="fpsStat">-- fps</span>
+</div>
+
+<div class="app">
+  <div class="video-wrap">
+    <img id="fpv" src="" alt="FPV Stream">
+    <div class="offline" id="vidOffline">Waiting for stream...</div>
+  </div>
+
+  <div class="controls">
+    <div class="panel left">
+      <div class="label">Drive / Steer</div>
+      <div class="joy" id="joy">
+        <div class="deadzone"></div>
+        <div class="base" id="joyBase"></div>
+      </div>
+      <div class="value" id="joyVal">T: 0&nbsp;&nbsp;S: 0</div>
+    </div>
+
+    <div class="panel right">
+      <div class="label">Audio / Lights</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <button class="primary" id="btnHorn">HORN</button>
+        <button id="btnLights">LIGHTS</button>
+      </div>
+      <div class="value" id="btnState">Horn: 0&nbsp;&nbsp;Lights: 0</div>
+    </div>
+  </div>
+
+  <div class="slider-row">
+    <label>Vol</label>
+    <input type="range" id="vol" min="0" max="30" value="22">
+    <span id="volVal">22</span>
+  </div>
+
+  <div class="slider-row">
+    <label>Music</label>
+    <button id="btnPlay" class="primary" style="flex:none;padding:6px 10px;font-size:11px;">PLAY</button>
+    <button id="btnPause" style="flex:none;padding:6px 10px;font-size:11px;">PAUSE</button>
+    <button id="btnPrev" style="flex:none;padding:6px 10px;font-size:11px;">PREV</button>
+    <button id="btnNext" style="flex:none;padding:6px 10px;font-size:11px;">NEXT</button>
+    <button id="btnEngine" style="flex:none;padding:6px 10px;font-size:11px;">ENGINE</button>
+  </div>
+
+  <div class="hint">Connect to Wi-Fi "RC_FPV_CAR" &rarr; open this page &radr; stream auto-starts</div>
+</div>
+
+<script>
+const WS_URL = 'ws://' + window.location.hostname + ':81/ws';
+const VIDEO_URL = 'http://' + window.location.hostname + ':81/stream';
+
+// ---- State ----
+let ws = null;
+let reconnectTimer = null;
+let hornPressed = false;
+let lightsOn = false;
+let volume = 22;
+let lastSend = 0;
+let connDot = document.getElementById('connDot');
+let connStat = document.getElementById('connStat');
+let fpsStat = document.getElementById('fpsStat');
+let fpvImg = document.getElementById('fpv');
+let vidOffline = document.getElementById('vidOffline');
+
+let frames = 0, fpsLast = performance.now();
+
+// ---- WebSocket ----
+function connect() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  ws = new WebSocket(WS_URL);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => {
+    connDot.className = 'dot on';
+    connStat.textContent = 'CONNECTED';
+    clearTimeout(reconnectTimer);
+    sendPacket({ V: volume });
+  };
+  ws.onclose = () => {
+    connDot.className = 'dot';
+    connStat.textContent = 'DISCONNECTED';
+    reconnectTimer = setTimeout(connect, 1000);
+  };
+  ws.onerror = () => { ws.close(); };
+}
+connect();
+
+// ---- Send packet (JSON) ----
+function sendPacket(obj) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify(obj));
+}
+
+let lastT = 0, lastS = 0, lastH = -1, lastL = -1;
+function pushDrive() {
+  const now = performance.now();
+  if (now - lastSend < 50) return;   // 20 Hz max
+  lastSend = now;
+  sendPacket({ T: lastT, S: lastS });
+}
+
+function setHorn(on) {
+  if (on === hornPressed) return;
+  hornPressed = on;
+  sendPacket({ H: on ? 1 : 0 });
+  document.getElementById('btnHorn').classList.toggle('active', on);
+  updateBtnState();
+}
+function toggleLights() {
+  lightsOn = !lightsOn;
+  sendPacket({ L: lightsOn ? 1 : 0 });
+  document.getElementById('btnLights').classList.toggle('active', lightsOn);
+  updateBtnState();
+}
+function updateBtnState() {
+  document.getElementById('btnState').textContent =
+    'Horn: ' + (hornPressed ? 1 : 0) + '  Lights: ' + (lightsOn ? 1 : 0);
+}
+
+// ---- Virtual Joystick ----
+const joy = document.getElementById('joy');
+const joyBase = document.getElementById('joyBase');
+const joyVal = document.getElementById('joyVal');
+const JOY_R = 75;   // outer radius px
+const DEAD = 16;    // deadzone radius px
+
+let activeTouchId = null;
+let cx = joy.clientWidth / 2, cy = joy.clientHeight / 2;
+
+function getPos(e) {
+  if (e.touches && e.touches.length) {
+    const r = joy.getBoundingClientRect();
+    return { x: e.touches[0].clientX - r.left, y: e.touches[0].clientY - r.top };
+  }
+  const r = joy.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function placeBase(x, y) {
+  const dx = x - cx, dy = y - cy;
+  let dist = Math.hypot(dx, dy);
+  if (dist > JOY_R) { dist = JOY_R; x = cx + (dx / dist) * JOY_R; y = cy + (dy / dist) * JOY_R; }
+  joyBase.style.left = (x - 22) + 'px';
+  joyBase.style.top  = (y - 22) + 'px';
+
+  // Normalize: throttle = -Y (forward = up), steer = X
+  const ddx = (x - cx) / JOY_R;
+  const ddy = (y - cy) / JOY_R;
+  const dead = DEAD / JOY_R;
+  let t = -ddy, s = ddx;
+  if (Math.abs(t) < dead) t = 0;
+  if (Math.abs(s) < dead) s = 0;
+  lastT = Math.round(t * 255);
+  lastS = Math.round(s * 45);
+  joyVal.textContent = 'T: ' + lastT + '&nbsp;&nbsp;S: ' + lastS;
+  pushDrive();
+}
+
+function resetJoy() {
+  joyBase.style.left = (cx - 22) + 'px';
+  joyBase.style.top  = (cy - 22) + 'px';
+  lastT = 0; lastS = 0;
+  joyVal.textContent = 'T: 0&nbsp;&nbsp;S: 0';
+  pushDrive();
+  activeTouchId = null;
+}
+
+joy.addEventListener('mousedown', (e) => { activeTouchId = 'mouse'; placeBase(getPos(e).x, getPos(e).y); });
+window.addEventListener('mousemove', (e) => { if (activeTouchId === 'mouse') placeBase(getPos(e).x, getPos(e).y); });
+window.addEventListener('mouseup', () => { if (activeTouchId === 'mouse') { resetJoy(); } });
+
+joy.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (activeTouchId === null && e.changedTouches.length) {
+    activeTouchId = e.changedTouches[0].identifier;
+    const p = getPos(e);
+    placeBase(p.x, p.y);
+  }
+}, { passive: false });
+window.addEventListener('touchmove', (e) => {
+  if (activeTouchId === null) return;
+  for (let t of e.changedTouches) {
+    if (t.identifier === activeTouchId) {
+      e.preventDefault();
+      const p = getPos(t);
+      placeBase(p.x, p.y);
+    }
+  }
+}, { passive: false });
+window.addEventListener('touchend', (e) => {
+  for (let t of e.changedTouches) {
+    if (t.identifier === activeTouchId) { resetJoy(); break; }
+  }
+});
+
+// ---- Buttons ----
+document.getElementById('btnHorn').addEventListener('touchstart', (e) => { e.preventDefault(); setHorn(true); });
+document.getElementById('btnHorn').addEventListener('touchend', (e) => { e.preventDefault(); setHorn(false); });
+document.getElementById('btnHorn').addEventListener('mousedown', () => setHorn(true));
+document.getElementById('btnHorn').addEventListener('mouseup', () => setHorn(false));
+document.getElementById('btnHorn').addEventListener('mouseleave', () => { if (hornPressed) setHorn(false); });
+
+document.getElementById('btnLights').addEventListener('click', toggleLights);
+
+document.getElementById('btnPlay').addEventListener('click', () => sendPacket({ M: 'play' }));
+document.getElementById('btnPause').addEventListener('click', () => sendPacket({ M: 'pause' }));
+document.getElementById('btnPrev').addEventListener('click', () => sendPacket({ M: 'prev' }));
+document.getElementById('btnNext').addEventListener('click', () => sendPacket({ M: 'next' }));
+document.getElementById('btnEngine').addEventListener('click', () => sendPacket({ M: 'engine' });
+
+document.getElementById('vol').addEventListener('input', (e) => {
+  volume = parseInt(e.target.value, 10);
+  document.getElementById('volVal').textContent = volume;
+  sendPacket({ V: volume });
+});
+
+// ---- FPV Video Stream ----
+let videoStarted = false;
+function startVideo() {
+  if (videoStarted) return;
+  videoStarted = true;
+  fpvImg.src = VIDEO_URL + '?t=' + Date.now();
+  fpvImg.onload = () => { fpvImg.src = VIDEO_URL + '?t=' + Date.now(); };
+  fpvImg.onerror = () => {
+    vidOffline.textContent = 'Stream offline — retrying...';
+    setTimeout(startVideo, 1000);
+  };
+  vidOffline.style.display = 'none';
+}
+
+// FPS counter via image loads
+fpvImg.addEventListener('load', () => {
+  frames++;
+  const now = performance.now();
+  if (now - fpsLast >= 1000) {
+    fpsStat.textContent = frames + ' fps';
+    frames = 0; fpsLast = now;
+    fpvImg.src = VIDEO_URL + '?t=' + Date.now();
+  }
+});
+
+startVideo();
+</script>
+</body>
+</html>

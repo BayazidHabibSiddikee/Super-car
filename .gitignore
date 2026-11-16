@@ -1,0 +1,41 @@
+# Supercar project gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# FreeCAD
+*.FCStd
+*.fcstd
+*.stl
+*.step
+*.stp
+*.iges
+*.igs
+
+# KiCad
+*.kicad_sch
+*.kicad_pcb
+*.net
+*.gbr
+*.drl
+*.pos
+*.rep
+*.txt~
+*-cache.lib
+fp-info-cache
+*.kicad_wks
+
+# Arduino
+*.hex
+*.bin
+*.elf
+.arduinoIDE/
+
+# Build / dist
+dist/
+build/
+*.pdf
+
+# Logs
+*.log

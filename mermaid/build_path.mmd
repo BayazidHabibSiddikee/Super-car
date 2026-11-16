@@ -1,0 +1,82 @@
+flowchart TD
+    %% Supercar Build Path — Mermaid Execution Diagram
+    %% Dependency-ordered phases: N must complete before N+1
+
+    P0[("P0: Project Scaffold<br/>git init, docs, README")] --> P1
+    P0:::phase0
+
+    P1[("P1: FreeCAD Mechanical<br/>rc_gearboxes.py + chassis_v2 +<br/>body_shell + wheels_tires")] --> P2
+    P1:::phase1
+    P1 --> P1a["Rear N20 + MR63ZZ gearbox<br/>500 g load isolation"]
+    P1 --> P1b["Front SG92R + Ackermann C-hub<br/>±40° steering lock"]
+    P1 --> P1c["Complete chassis + upper deck<br/>TRAY_Z=37 mm, speaker bay"]
+    P1 --> P1d["Snap-on aero body shell<br/>camera viewport + rocker clips"]
+    P1 --> P1e["PETG rims + TPU chevron tires<br/>34 mm OD"]
+
+    P2[("P2: KiCad Carrier PCB<br/>46 × 32 mm, 2-layer")] --> P3
+    P2:::phase2
+    P2 --> P2a["MP1584EN 5V buck +<br/>anti-brownout 470 µF"]
+    P2 --> P2b["RZ7889 SOIC-8 H-bridge<br/>N20 rear drive"]
+    P2 --> P2c["HXJ8002 3W Class-D amp<br/>+ passive audio mixer"]
+    P2 --> P2d["AO3400 MOSFETs<br/>horn / headlights / taillights"]
+    P2 --> P2e["JQ6500-16P onboard flash<br/>+ MH-M18 Bluetooth A2DP"]
+    P2 --> P2f["ESP32-CAM 1×8 headers<br/>+ 1×4 UART flash header"]
+
+    P3[("P3: PCB Populate &<br/>Wire Harness")] --> P4
+    P3:::phase3
+    P3 --> P3a["SMD 0805 reflow / hand-solder"]
+    P3 --> P3b["JST-XH connectors + headers"]
+    P3 --> P3c["Multimeter: no VCC→GND shorts"]
+    P3 --> P3d["5V rail: 4.90–5.15 V OK"]
+
+    P4[("P4: ESP32-CAM Firmware<br/>FPV_Car_DFPlayer_AutoResume.ino")] --> P5
+    P4:::phase4
+    P4 --> P4a["Port 80 WebSocket: T/S/H/L/V/M"]
+    P4 --> P4b["Port 81 MJPEG video stream"]
+    P4 --> P4c["Motor/servo PWM on Timer 1 & 2<br/>never Timer 0 (camera XCLK)"]
+    P4 --> P4d["JQ6500 UART on GPIO 16<br/>horn trigger on GPIO 12"]
+    P4 --> P4e["250 ms failsafe stop wheels"]
+    P4 --> P4f["1.5 s auto-resume music after horn"]
+
+    P5[("P5: Architecture A Audio<br/>Phone Music + Onboard Horn")] --> P6
+    P5:::phase5
+    P5 --> P5a["MH-M18 Bluetooth A2DP<br/>phone streams music"]
+    P5 --> P5b["JQ6500-16P 8 MB SPI flash<br/>horn.mp3 / engine.mp3 / music"]
+    P5 --> P5c["10 kΩ + 1 µF mixer into HXJ8002"]
+    P5 --> P5d["10 Ω ferrite on MH-M18 5V rail"]
+
+    P6[("P6: Chassis Assembly<br/>Print & Assemble")] --> P7
+    P6:::phase6
+    P6 --> P6a["PETG chassis: 4 walls, 40% gyroid"]
+    P6 --> P6b["MR63ZZ bearings + N20 + 3 mm axle"]
+    P6 --> P6c["SG92R + M2 kingpin steering knuckles"]
+    P6 --> P6d["Snap-on body shell + TPU tires"]
+    P6 --> P6e["2S 18650 + BMS in lower cradle"]
+
+    P7[("P7: Bring-Up & Smoke Test")] --> P8
+    P7:::phase7
+    P7 --> P7a["Continuity: no shorts"]
+    P7 --> P7b["Tap GPIO 14/15/13/12/2: motor/servo/horn"]
+    P7 --> P7c["Seat ESP32-CAM: AP + video boots"]
+    P7 --> P7d["Full-load stall: 5V > 4.75 V, < 60 °C"]
+
+    P8[("P8: Field Test &<br/>Commercial Validation")] --> P9
+    P8:::phase8
+    P8 --> P8a["Phone: joystick + horn + lights + music"]
+    P8 --> P8b["FPV 20+ FPS at 50 m LOS"]
+    P8 --> P8c["500 g payload: no flex, no stall"]
+
+    P9[("P9: Production Kit<br/>Gerbers + BOM + Docs<br/>git tag v1.0")]:::phase9
+
+    classDef phase0 fill:#e1f5e1,stroke:#2e7d32,stroke-width:2px
+    classDef phase1 fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef phase2 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef phase3 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef phase4 fill:#e0f7fa,stroke:#00838f,stroke-width:2px
+    classDef phase5 fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef phase6 fill:#fffde7,stroke:#f57f17,stroke-width:2px
+    classDef phase7 fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef phase8 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef phase9 fill:#eceff1,stroke:#37474f,stroke-width:2px
+
+    linkStyle default stroke-width:2px,fill:none,stroke:#666
