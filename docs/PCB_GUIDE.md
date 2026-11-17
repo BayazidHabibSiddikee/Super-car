@@ -8,6 +8,17 @@ Source: `super car.pdf` KiCad schematic + layout sections. The carrier board plu
 - Y = 46.0 mm = Front (camera) edge; Y = 0.0 mm = Rear (speaker/battery) edge
 - Four M2 mounting holes at: (2.5, 2.5), (29.5, 2.5), (2.5, 43.5), (29.5, 43.5)
 
+## Quality Features (v2)
+
+| Feature | Implementation | Purpose |
+|---------|---------------|---------|
+| Ground pour | Filled zone on B.Cu, net GND | Lower impedance return path, better EMI |
+| Test points | 6× 1.4 mm pads (TP_VBAT, TP_GND, TP_5V, TP_FWD, TP_REV, TP_SERVO) | Multimeter bring-up debug without probing IC pins |
+| Silkscreen | Component designators + connector labels on F.SilkS | Assembly orientation, no guesswork |
+| Antenna keepout | Rule area on F.Cu + B.Cu, X=4→28, Y=36→46 | Protects Wi-Fi video range (50+ m LOS) |
+| Decoupling | C1 470 µF placed adjacent to ESP32-CAM 5V/GND | Anti-brownout under motor/servo load |
+| Single-sided DIY | 4 top-layer jumpers, 0.8–1.5 mm tracks | Home-etchable with toner transfer |
+
 ## Component Placement (Coordinate Map)
 
 | Module | Side | Center (X, Y) | Orientation |
@@ -23,12 +34,8 @@ Source: `super car.pdf` KiCad schematic + layout sections. The carrier board plu
 | J6 speaker + SW1 switch | Top | J6 (22.0, 2.5), SW1 (28.5, 9.0) | Rear edge / right edge protrusion |
 | J3 servo + J4/J5 LEDs | Top | J3 (16.0, 41.5), J4 (7.5, 41.5), J5 (24.5, 41.5) | Front edge, right-angle, under camera overhang |
 | J7 1×4 UART flash | Top | (2.0, 11.0) | Left edge, right-angle for USB-TTL |
-
-## Antenna Keepout
-
-- Rule Area / Keepout on F.Cu + B.Cu: X = 4→28 mm, Y = 36→46 mm
-- No copper pours or tracks under the ESP32-CAM antenna overhang
-- Keeps Wi-Fi video range at 50+ m LOS
+| TP_VBAT / TP_GND / TP_5V | Top | (26.0, 2.5), (26.0, 5.0), (26.0, 7.5) | Right edge, probe-accessible |
+| TP_FWD / TP_REV / TP_SERVO | Top | (26.0, 10.0), (26.0, 12.5), (26.0, 15.0) | Right edge, probe-accessible |
 
 ## Trace Width Net Classes (KiCad → Board Setup → Net Classes)
 
