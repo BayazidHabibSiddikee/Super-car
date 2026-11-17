@@ -51,8 +51,8 @@ flowchart LR
 | Q3 Web App UX | ✅ Complete | Reconnection overlay, telemetry dashboard, battery/RSSI/uptime |
 | Q4 PCB Quality | ✅ Complete | Ground pour, 6 test points, silkscreen, antenna keepout |
 | Q5 FreeCAD | ✅ Complete | Parameter validation, geometry check, py_compile OK |
-| Q6 Docs + Process | 🔄 In progress | Troubleshooting, assembly guide, safety checklist |
-| Q7 Release | ⏳ Pending | Tag v1.0, changelog |
+| Q6 Docs + Process | ✅ Complete | Troubleshooting, assembly, safety, editorconfig |
+| Q7 Release | ✅ Complete | Tag v1.0, changelog |
 
 ---
 
