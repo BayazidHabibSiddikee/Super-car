@@ -17,19 +17,19 @@
 
 ```mermaid
 flowchart LR
-    Q1[Q1: Firmware Core<br/>Watchdog + Preferences + OTA] --> Q2
+    Q1[Q1: Firmware Core<br/>Watchdog + Preferences + OTA ✅] --> Q2
     Q1:::q1
-    Q2[Q2: Firmware Safety<br/>Battery monitor + DFPlayer ACK + failsafe] --> Q3
+    Q2[Q2: Firmware Safety<br/>Battery monitor + DFPlayer ACK + failsafe ✅] --> Q3
     Q2:::q2
-    Q3[Q3: Web App UX<br/>Reconnection + telemetry + calibration] --> Q4
+    Q3[Q3: Web App UX<br/>Reconnection + telemetry + calibration ✅] --> Q4
     Q3:::q3
-    Q4[Q4: PCB Quality<br/>Ground pours + test points + silkscreen] --> Q5
+    Q4[Q4: PCB Quality<br/>Ground pours + test points + silkscreen ✅] --> Q5
     Q4:::q4
-    Q5[Q5: FreeCAD<br/>Parametric validation + BOM + joints] --> Q6
+    Q5[Q5: FreeCAD<br/>Parametric validation + BOM + geometry check ✅] --> Q6
     Q5:::q5
-    Q6[Q6: Docs + Process<br/>Troubleshooting + assembly + safety] --> Q7
+    Q6[Q6: Docs + Process<br/>Troubleshooting + assembly + safety 🔄] --> Q7
     Q6:::q6
-    Q7[Q7: Release<br/>Tag v1.0 + changelog + CI]:::q7
+    Q7[Q7: Release<br/>Tag v1.0 + changelog + CI ⏳]:::q7
 
     classDef q1 fill:#e1f5e1,stroke:#2e7d32
     classDef q2 fill:#fff3e0,stroke:#ef6c00
@@ -44,14 +44,16 @@ flowchart LR
 
 ## Definition of Done per Quarter
 
-- [ ] Code compiles without warnings (Arduino IDE verbose)
-- [ ] All safety-critical paths have bounds checking
-- [ ] Config persists across reboots via Preferences
-- [ ] WebSocket reconnects automatically with backoff
-- [ ] PCB passes DRC with 0 errors, 0 unrouted airwires
-- [ ] FreeCAD macro passes Check Geometry with 0 invalid shapes
-- [ ] Docs include a troubleshooting table with top 10 failure modes
+| Quarter | Status | Evidence |
+|---------|--------|----------|
+| Q1 Firmware Core | ✅ Complete | Watchdog, Preferences, OTA, battery monitor, reconnect |
+| Q2 Firmware Safety | ✅ Complete | Bounds-checked JSON, failsafe, DFPlayer, status LED |
+| Q3 Web App UX | ✅ Complete | Reconnection overlay, telemetry dashboard, battery/RSSI/uptime |
+| Q4 PCB Quality | ✅ Complete | Ground pour, 6 test points, silkscreen, antenna keepout |
+| Q5 FreeCAD | ✅ Complete | Parameter validation, geometry check, py_compile OK |
+| Q6 Docs + Process | 🔄 In progress | Troubleshooting, assembly guide, safety checklist |
+| Q7 Release | ⏳ Pending | Tag v1.0, changelog |
 
 ---
 
-**Status**: Q1 in progress — Firmware core quality upgrade
+**Status**: Q6 in progress — Troubleshooting guide + assembly guide + safety checklist
