@@ -2,39 +2,37 @@ import FreeCAD as App
 import Part
 import math
 
-doc = App.newDocument("Ferrari_Enzo_Modular_Assembly")
+doc = App.newDocument("Ferrari_Enzo_Fixed_Assembly")
 
 # ==========================================
 # MASTER VEHICLE PARAMETERS (mm)
 # ==========================================
 TOL = 0.15
-FLOOR_T = 3.0
 WHEELBASE = 115.0
 REAR_AXLE_Y = 26.0
 FRONT_AXLE_Y = REAR_AXLE_Y + WHEELBASE    # 141.0 mm
 
 CHASSIS_W = 54.0
 FENDER_W = 74.0
-TRAY_Z = 22.0                             # Low-profile electronics deck above 2S battery
-ROOF_Z = 38.5                             # True low-slung Enzo roof height
+TRAY_Z = 22.0                             # Electronics deck sits above 2S 18650 battery
+ROOF_Z = 38.5                             # Low-slung Ferrari Enzo roof height
 
 WALL = 2.0
 CLEARANCE = 0.4
-INNER_W = CHASSIS_W + (CLEARANCE * 2.0)   # 54.8 mm snap-fit cavity
+INNER_W = CHASSIS_W + (CLEARANCE * 2.0)   # 54.8 mm chassis snap-fit cavity
 
-# Hardware Dimensions
-SPK_D = 36.2                              # 36mm 3W speaker outer diameter
-SPK_MAG_D = 22.0                          # Speaker magnet diameter
+# Hardware & Off-the-Shelf Market Wheel Dimensions
+SPK_D = 36.2                              # 36mm 3W speaker
+MARKET_WHEEL_OD = 34.0                    # Standard 34mm x 15mm N20 market rubber wheel
+MARKET_WHEEL_W = 15.0
 N20_W, N20_H, N20_L = 12.15, 10.15, 16.0
 SERVO_L, SERVO_W, SERVO_H = 23.25, 12.65, 15.5
-FRONT_TRACK = 66.0
+FRONT_TRACK = 64.0
 CHUB_GAP, CHUB_ARM_T = 14.0, 3.5
 
-# Helper: Create valid, refined Part::Feature inside an App::Part container
 def add_solid(group, name, shape, color=(0.8, 0.8, 0.8), transparency=0):
     clean_shape = shape.removeSplitter()
     if not clean_shape.isValid():
-        App.Console.PrintWarning(f"Geometry warning on {name}: attempting fix...\n")
         clean_shape.fix(1e-3, 1e-3, 1e-3)
     obj = doc.addObject("Part::Feature", name)
     obj.Shape = clean_shape
@@ -57,23 +55,23 @@ def make_wire(y_pos, half_w, z_bot, z_side, z_top, top_half_w):
     return Part.Wire(Part.makePolygon(pts).Edges)
 
 # ==========================================
-# CREATE MODULAR ASSEMBLY CONTAINERS (App::Part)
+# MODULAR ASSEMBLY CONTAINERS (App::Part)
 # ==========================================
 grp_ext   = doc.addObject("App::Part", "01_Exterior_Body")
 grp_glass = doc.addObject("App::Part", "02_Glass_And_Lights")
 grp_chas  = doc.addObject("App::Part", "03_Chassis_And_Steering")
-grp_wheel = doc.addObject("App::Part", "04_Wheels_And_Tires")
+grp_wheel = doc.addObject("App::Part", "04_Market_Wheels_34mm")
 grp_audio = doc.addObject("App::Part", "05_Audio_System")
 grp_elec  = doc.addObject("App::Part", "06_Electronics_Deck")
 
 # ==========================================
-# MODULE 01 & 02: EXTERIOR BODY, DIFFUSER & SEPARATE LENSES
+# MODULE 01 & 02: EXTERIOR BODY, FLUSH GLASS & ANGLED HEADLIGHTS
 # ==========================================
-def build_exterior_and_glass():
+def build_exterior_glass_lights():
     hw_f = FENDER_W / 2.0
     hw_in = INNER_W / 2.0
 
-    # Wide Fender Body Loft
+    # 1. Wide Fender Body Loft
     w_rear   = make_wire(-2.0,  hw_f - 2.0, 2.5, 22.0, 27.5, 28.0)
     w_haunch = make_wire(32.0,  hw_f,       1.0, 23.0, 28.5, 31.0)
     w_waist  = make_wire(82.0,  hw_f - 2.5, 1.0, 21.0, 25.5, 29.0)
@@ -81,7 +79,7 @@ def build_exterior_and_glass():
     w_front  = make_wire(163.0, hw_f - 5.0, 2.0, 13.0, 17.5, 25.0)
     fender_body = Part.makeLoft([w_rear, w_haunch, w_waist, w_ffend, w_front], True)
 
-    # Central Teardrop Canopy + F1 Nose Cone
+    # 2. Central Teardrop Canopy + F1 Protruding Nose Cone
     c_rear   = make_wire(0.0,   16.0, 10.0, 25.0, 28.5, 11.0)
     c_spk    = make_wire(30.0,  21.5, 10.0, 29.5, 34.5, 15.5)
     c_cock1  = make_wire(72.0,  22.5, 10.0, 32.0, ROOF_Z, 15.5)
@@ -92,7 +90,7 @@ def build_exterior_and_glass():
 
     outer = fender_body.fuse(canopy)
 
-    # Interior Cavity (2.0mm shell wall)
+    # 3. Hollow Interior Cavity (2.0mm shell wall)
     wi_rear   = make_wire(0.0,   hw_in,       -2.0, 21.0, 26.0, 25.0)
     wi_haunch = make_wire(32.0,  hw_in,       -2.0, 22.0, 32.5, 19.5)
     wi_waist  = make_wire(82.0,  hw_in,       -2.0, 28.0, ROOF_Z - WALL, 15.0)
@@ -102,47 +100,73 @@ def build_exterior_and_glass():
 
     shell = outer.cut(cavity)
 
-    # Outer-Only Wheel Arches (Preserves F1 Nose & Center Spine)
+    # 4. Outer-Only Wheel Arches (Sized for 34mm Market Rubber Wheels)
     for side in [-1, 1]:
-        x_start = 17.5 if side == 1 else -(hw_f + 5.0)
-        span = (hw_f + 5.0) - 17.5
-        shell = shell.cut(Part.makeCylinder(19.5, span, App.Vector(x_start, REAR_AXLE_Y, 7.5), App.Vector(1, 0, 0)))
-        shell = shell.cut(Part.makeCylinder(20.5, span, App.Vector(x_start, FRONT_AXLE_Y, 7.5), App.Vector(1, 0, 0)))
+        x_start = 18.0 if side == 1 else -(hw_f + 5.0)
+        span = (hw_f + 5.0) - 18.0
+        shell = shell.cut(Part.makeCylinder(19.5, span, App.Vector(x_start, REAR_AXLE_Y, 8.1), App.Vector(1, 0, 0)))
+        shell = shell.cut(Part.makeCylinder(20.5, span, App.Vector(x_start, FRONT_AXLE_Y, 8.1), App.Vector(1, 0, 0)))
 
-    # Front Grille Intakes & Side NACA Air Scoops
+    # 5. Front Twin Grille Intakes & Side NACA Scoops
     for side in [-1, 1]:
         ix = 8.5 if side == 1 else -28.5
         shell = shell.cut(Part.makeBox(20.0, 10.0, 8.5, App.Vector(ix, 156.0, 4.0)))
         sx = (hw_f - 4.5) if side == 1 else -(hw_f + 1.0)
         shell = shell.cut(Part.makeBox(5.5, 30.0, 12.0, App.Vector(sx, 50.0, 8.0)))
 
-    # Recessed Windshield Frame (1.3mm Step Seat) + Separate Clear Windshield Insert
-    ws_outer_cut = Part.makeBox(26.0, 22.0, 11.0, App.Vector(-13.0, 102.0, 24.5))
-    shell = shell.cut(ws_outer_cut)
+    # 6. FLUSH SLOPED WINDSHIELD CUTOUT & CONTOURED CLEAR INSERT
+    # Lofted along exact canopy rake from Y=105 (Z=36.5) down to Y=131 (Z=25.5)
+    ws_cut_top = make_wire(105.0, 14.2, 31.0, 34.0, 37.5, 13.0)
+    ws_cut_bot = make_wire(131.0, 11.0, 22.0, 24.5, 27.0, 10.0)
+    ws_cutter = Part.makeLoft([ws_cut_top, ws_cut_bot], True)
+    shell = shell.cut(ws_cutter)
 
-    # Separate Clear Windshield Frame with Unobstructed Center Camera Aperture
-    ws_glass = Part.makeBox(25.4, 1.2, 10.2, App.Vector(-12.7, 112.0, 24.8))
-    ws_glass.rotate(App.Vector(0, 112.0, 24.8), App.Vector(1, 0, 0), -28.0)
-    cam_aperture = Part.makeCylinder(5.5, 12.0, App.Vector(0, 106.0, 29.0), App.Vector(0, 1, 0))
-    ws_glass = ws_glass.cut(cam_aperture)
-    add_solid(grp_glass, "Front_Windshield_Clear_Insert", ws_glass, (0.6, 0.85, 0.95), 65)
+    # Flush Clear Windshield Glass (1.0mm thick, sits inside window frame without poking out)
+    ws_gl_top = make_wire(105.5, 13.8, 34.6, 35.4, 36.1, 12.6)
+    ws_gl_bot = make_wire(130.5, 10.6, 24.2, 25.0, 25.7,  9.6)
+    ws_glass = Part.makeLoft([ws_gl_top, ws_gl_bot], True)
+    # Clean camera lens viewport hole through windshield so ESP32-CAM has zero glare
+    cam_hole = Part.makeCylinder(5.2, 35.0, App.Vector(0, 102.0, 32.0), App.Vector(0, 1, -0.15))
+    ws_glass = ws_glass.cut(cam_hole)
+    add_solid(grp_glass, "Front_Windshield_Flush_Glass", ws_glass, (0.65, 0.88, 0.98), 65)
 
-    # Side Windows Cutout + Separate Clear Side Glass Inserts
-    shell = shell.cut(Part.makeBox(FENDER_W + 4.0, 26.0, 8.5, App.Vector(-FENDER_W/2 - 2.0, 70.0, 26.0)))
+    # 7. FLUSH TUMBLED SIDE WINDOWS (Follows 26-deg inward cabin slope)
     for side, sname in [(-1, "Side_Glass_L"), (1, "Side_Glass_R")]:
-        gx = (16.5) if side == 1 else -17.5
-        s_glass = Part.makeBox(1.0, 25.4, 8.0, App.Vector(gx, 70.3, 26.2))
-        add_solid(grp_glass, sname, s_glass, (0.6, 0.85, 0.95), 65)
+        # Side window cutout on canopy wall
+        sw_cut = Part.makeBox(10.0, 28.0, 6.2, App.Vector(side * 16.5 - (5.0 if side == -1 else 0), 73.0, 30.2))
+        sw_cut.rotate(App.Vector(side * 16.5, 87.0, 33.0), App.Vector(0, 1, 0), -side * 25.0)
+        shell = shell.cut(sw_cut)
 
-    # Headlight Housings + Separate Clear Headlight Covers
-    for side, lname in [(-1, "Headlight_Lens_L"), (1, "Headlight_Lens_R")]:
-        lx = (side * 23.5) - 3.5
-        shell = shell.cut(Part.makeBox(7.2, 14.2, 4.2, App.Vector(lx - 0.1, 146.9, 20.9)))
-        shell = shell.cut(Part.makeCylinder(2.6, 18.0, App.Vector(side * 23.5, 142.0, 18.5), App.Vector(0, 1, 0)))
-        lens = Part.makeBox(6.8, 13.8, 1.2, App.Vector(lx + 0.1, 147.1, 22.8))
-        add_solid(grp_glass, lname, lens, (0.9, 0.95, 1.0), 50)
+        # Flush Side Glass Insert tilted to match cabin wall angle
+        sg = Part.makeBox(1.0, 27.2, 5.6, App.Vector(side * 17.6 - (1.0 if side == 1 else 0), 73.4, 30.5))
+        sg.rotate(App.Vector(side * 17.6, 87.0, 33.0), App.Vector(0, 1, 0), -side * 25.0)
+        add_solid(grp_glass, sname, sg, (0.65, 0.88, 0.98), 65)
 
-    # Rear Engine Speaker Louvers + Snap-On Rocker Clips
+    # 8. PROPERLY ANGLED FENDER HEADLIGHT BUCKETS, 5mm LED SOCKETS & FLUSH LENSES
+    # Fender slopes downward at 19.8 deg from Y=138 (Z=26.5) to Y=163 (Z=17.5)
+    fender_slope_deg = 19.8
+    for side, bname, lname in [(-1, "Headlight_Bucket_L", "Headlight_Clear_Lens_L"),
+                               ( 1, "Headlight_Bucket_R", "Headlight_Clear_Lens_R")]:
+        hx = side * 24.5
+        # Cut recessed headlight pocket into top of sloped front fender (Y = 143 to 158 mm)
+        pocket = Part.makeBox(6.8, 15.0, 6.5, App.Vector(hx - 3.4, 143.0, 18.2))
+        pocket.rotate(App.Vector(hx, 143.0, 24.7), App.Vector(1, 0, 0), -fender_slope_deg)
+        shell = shell.cut(pocket)
+
+        # Internal Black Headlight Reflector Housing + Straight-Forward (+Y) 5.2mm LED Bore
+        bucket = Part.makeBox(6.4, 14.4, 4.8, App.Vector(hx - 3.2, 143.3, 18.4))
+        bucket.rotate(App.Vector(hx, 143.3, 23.2), App.Vector(1, 0, 0), -fender_slope_deg)
+        led_socket = Part.makeCylinder(2.6, 22.0, App.Vector(hx, 139.0, 19.2), App.Vector(0, 1, 0))
+        bucket = bucket.cut(led_socket)
+        shell = shell.cut(led_socket)
+        add_solid(grp_glass, bname, bucket, (0.12, 0.12, 0.14), 0)
+
+        # Flush Clear Polycarbonate Headlight Cover matching the exact 19.8-deg fender slope
+        lens = Part.makeBox(6.4, 14.4, 1.1, App.Vector(hx - 3.2, 143.3, 23.3))
+        lens.rotate(App.Vector(hx, 143.3, 24.4), App.Vector(1, 0, 0), -fender_slope_deg)
+        add_solid(grp_glass, lname, lens, (0.95, 0.98, 1.0), 45)
+
+    # 9. Rear Engine Speaker Louvers & Snap-On Rocker Clips
     for sy in [10.0, 15.0, 20.0, 25.0, 30.0]:
         shell = shell.cut(Part.makeBox(28.0, 2.5, 10.0, App.Vector(-14.0, sy, 26.0)))
 
@@ -154,7 +178,7 @@ def build_exterior_and_glass():
 
     add_solid(grp_ext, "Main_Body_Shell_Enzo", shell, (0.85, 0.08, 0.08), 0)
 
-    # Separate Rear Diffuser & Quad Exhaust Module (Printable in Matte Black PETG)
+    # Rear Diffuser & Quad Exhaust Tips
     diff = Part.makeBox(46.0, 7.0, 2.0, App.Vector(-23.0, -2.0, 8.5))
     for fx in [-15.0, -7.5, 0.0, 7.5, 15.0]:
         diff = diff.fuse(Part.makeBox(1.8, 7.0, 7.0, App.Vector(fx - 0.9, -2.0, 2.0)))
@@ -166,62 +190,41 @@ def build_exterior_and_glass():
     add_solid(grp_ext, "Rear_Diffuser_And_Exhaust", diff, (0.15, 0.15, 0.17), 0)
 
 # ==========================================
-# MODULE 05: SEALED REAR ACOUSTIC SPEAKER ENCLOSURE
+# MODULE 05: SEALED REAR SPEAKER ENCLOSURE
 # ==========================================
 def build_audio_enclosure():
-    # Sealed Chamber sitting atop Rear Gearbox (Y = 1..37mm, Z = 16.2..26.5mm)
-    # Internal sealed volume ~ 15.5 cm^3 with magnet clearance & TPU gasket seat
     box_w, box_l, box_h = 44.0, 36.0, 10.3
     chamber_out = Part.makeBox(box_w, box_l, box_h, App.Vector(-box_w/2.0, 1.0, 16.2))
     chamber_in  = Part.makeBox(box_w - 4.4, box_l - 4.4, box_h - 3.5, App.Vector(-(box_w - 4.4)/2.0, 3.2, 18.2))
     enclosure = chamber_out.cut(chamber_in)
-
-    # Top Speaker Bore (36.2mm) + 1.2mm Recessed Gasket Seat
-    spk_hole = Part.makeCylinder(SPK_D / 2.0, 5.0, App.Vector(0, 19.0, 22.5))
-    gasket_seat = Part.makeCylinder((SPK_D / 2.0) + 1.5, 1.2, App.Vector(0, 19.0, 25.3))
-    enclosure = enclosure.cut(spk_hole).cut(gasket_seat)
-
-    # 4x M2 Mounting Bosses around Speaker Flange
-    for ang in [45, 135, 225, 315]:
-        bx = 20.5 * math.cos(math.radians(ang))
-        by = 19.0 + 20.5 * math.sin(math.radians(ang))
-        enclosure = enclosure.cut(Part.makeCylinder(0.85, 6.0, App.Vector(bx, by, 21.0)))
-
+    enclosure = enclosure.cut(Part.makeCylinder(SPK_D / 2.0, 5.0, App.Vector(0, 19.0, 22.5)))
+    enclosure = enclosure.cut(Part.makeCylinder((SPK_D / 2.0) + 1.5, 1.2, App.Vector(0, 19.0, 25.3)))
     add_solid(grp_audio, "Sealed_Speaker_Enclosure_36mm", enclosure, (0.2, 0.22, 0.25), 0)
 
-    # Separate Printable TPU Speaker Gasket Ring
-    gasket = Part.makeCylinder((SPK_D / 2.0) + 1.4, 1.2, App.Vector(0, 19.0, 25.4)).cut(
-             Part.makeCylinder((SPK_D / 2.0) - 1.5, 2.0, App.Vector(0, 19.0, 25.0)))
-    add_solid(grp_audio, "TPU_Speaker_Gasket", gasket, (0.1, 0.6, 0.6), 0)
-
 # ==========================================
-# MODULE 03, 04 & 06: CHASSIS, STEERING, WHEELS & LOW-PROFILE PCB DECK
+# MODULE 03, 04 & 06: CHASSIS, TOP-MOUNT PCB DECK & 34mm MARKET WHEELS
 # ==========================================
-def build_chassis_electronics_wheels():
-    # Main Chassis Base Plate (2.5mm belly pan + side rails + rear N20 lower gearbox + front C-hubs)
+def build_chassis_pcb_and_market_wheels():
     deck = Part.makeBox(CHASSIS_W, 148.0, 2.5, App.Vector(-CHASSIS_W/2.0, 4.0, 0))
     rail_l = Part.makeBox(3.0, 125.0, 8.5, App.Vector(-CHASSIS_W/2.0, 15.0, 0))
     rail_r = Part.makeBox(3.0, 125.0, 8.5, App.Vector(CHASSIS_W/2.0 - 3.0, 15.0, 0))
     chassis = deck.fuse(rail_l).fuse(rail_r)
 
-    # Rear Gearbox Lower Half (Z = 0..8.1mm)
+    # Rear N20 + Bearing Gearbox
     gb_h = 16.2
     z_ax = gb_h / 2.0
     rear_gb = Part.makeBox(48.0, 36.0, gb_h, App.Vector(-24.0, 0, 0))
     rear_gb = rear_gb.cut(Part.makeBox(N20_W, N20_L, N20_H, App.Vector(-N20_W/2.0, 3.0, z_ax - N20_H/2.0)))
     rear_gb = rear_gb.cut(Part.makeBox(16.0, 14.0, 12.0, App.Vector(-8.0, 19.0, z_ax - 6.0)))
     rear_gb = rear_gb.cut(Part.makeCylinder(1.65, 50.0, App.Vector(-25.0, REAR_AXLE_Y, z_ax), App.Vector(1, 0, 0)))
-    rear_gb = rear_gb.cut(Part.makeCylinder(3.04, 3.1, App.Vector(-24.5, REAR_AXLE_Y, z_ax), App.Vector(1, 0, 0)))
-    rear_gb = rear_gb.cut(Part.makeCylinder(3.04, 3.1, App.Vector(21.4, REAR_AXLE_Y, z_ax), App.Vector(1, 0, 0)))
-
     rear_low = rear_gb.cut(Part.makeBox(54.0, 42.0, gb_h, App.Vector(-27.0, -3.0, z_ax)))
     rear_up  = rear_gb.cut(Part.makeBox(54.0, 42.0, gb_h, App.Vector(-27.0, -3.0, z_ax - gb_h)))
     chassis = chassis.fuse(rear_low)
     add_solid(grp_chas, "Rear_Gearbox_Upper_Cap", rear_up, (0.3, 0.35, 0.4), 0)
 
-    # 4x Low-Profile Pillars supporting Electronics Deck at Z = 22.0 mm
+    # 4x Pillars supporting Electronics Deck at Z = 22.0 mm (2S 18650 Battery sits underneath!)
     for px in [-CHASSIS_W/2.0 + 3.5, CHASSIS_W/2.0 - 3.5]:
-        for py in [42.0, 118.0]:
+        for py in [42.0, 122.0]:
             chassis = chassis.fuse(Part.makeCylinder(3.2, TRAY_Z - 2.5, App.Vector(px, py, 2.5)))
 
     # Front SG92R Servo & C-Hub Bridge
@@ -243,27 +246,32 @@ def build_chassis_electronics_wheels():
 
     add_solid(grp_chas, "Main_Chassis_Base", chassis, (0.25, 0.25, 0.28), 0)
 
-    # Low-Profile Electronics & PCB Deck (Z = 22.0 mm, fits cleanly under 38.5mm Enzo canopy)
-    pcb_deck = Part.makeBox(CHASSIS_W, 84.0, 2.0, App.Vector(-CHASSIS_W/2.0, 38.0, TRAY_Z))
+    # Electronics Deck (Z = 22.0 mm): Audio Modules at Rear (Y=42..70), PCB Mounted ON TOP at Front (Y=74..120)
+    pcb_deck = Part.makeBox(CHASSIS_W, 86.0, 2.0, App.Vector(-CHASSIS_W/2.0, 38.0, TRAY_Z))
+    # 4x M2 Standoffs ON TOP of deck for 46x32mm Carrier PCB (Y = 74 to 120 mm)
     for mx in [-13.5, 13.5]:
-        for my in [68.0, 109.0]:
+        for my in [76.5, 117.5]:
             pcb_deck = pcb_deck.fuse(Part.makeCylinder(2.4, 3.5, App.Vector(mx, my, TRAY_Z + 2.0)))
     add_solid(grp_elec, "Low_Profile_PCB_Deck", pcb_deck, (0.1, 0.45, 0.25), 0)
 
-    # 4x Wheels & TPU Tires Positioned on Axles
+    # Visual Reference: Carrier PCB + ESP32-CAM Mounted ON TOP of Deck (Z = 25.5 to 36.0 mm)
+    pcb_board = Part.makeBox(32.0, 46.0, 1.6, App.Vector(-16.0, 74.0, TRAY_Z + 5.5))
+    add_solid(grp_elec, "Carrier_PCB_Top_Mounted_Ref", pcb_board, (0.05, 0.35, 0.15), 25)
+
+    # Off-the-Shelf Market 34mm x 15mm N20 Rubber Wheels (Reference Fitment Check)
     for y_ax, prefix in [(REAR_AXLE_Y, "Rear"), (FRONT_AXLE_Y, "Front")]:
         for side, s_lbl in [(-1, "L"), (1, "R")]:
-            wx = side * 26.5
-            rim = Part.makeCylinder(12.0, 13.0, App.Vector(wx, y_ax, 8.1), App.Vector(side, 0, 0)).cut(
-                  Part.makeCylinder(1.55, 15.0, App.Vector(wx - side, y_ax, 8.1), App.Vector(side, 0, 0)))
-            tire = Part.makeCylinder(16.8, 13.0, App.Vector(wx, y_ax, 8.1), App.Vector(side, 0, 0)).cut(
-                   Part.makeCylinder(11.9, 15.0, App.Vector(wx - side, y_ax, 8.1), App.Vector(side, 0, 0)))
-            add_solid(grp_wheel, f"{prefix}_Rim_{s_lbl}", rim, (0.75, 0.75, 0.78), 0)
-            add_solid(grp_wheel, f"{prefix}_TPU_Tire_{s_lbl}", tire, (0.12, 0.12, 0.13), 0)
+            wx = side * 21.0
+            hub = Part.makeCylinder(11.0, MARKET_WHEEL_W, App.Vector(wx, y_ax, 8.1), App.Vector(side, 0, 0)).cut(
+                  Part.makeCylinder(1.5, MARKET_WHEEL_W + 2.0, App.Vector(wx - side, y_ax, 8.1), App.Vector(side, 0, 0)))
+            rubber = Part.makeCylinder(MARKET_WHEEL_OD / 2.0, MARKET_WHEEL_W, App.Vector(wx, y_ax, 8.1), App.Vector(side, 0, 0)).cut(
+                     Part.makeCylinder(11.0, MARKET_WHEEL_W + 2.0, App.Vector(wx - side, y_ax, 8.1), App.Vector(side, 0, 0)))
+            add_solid(grp_wheel, f"Market_34mm_Hub_{prefix}_{s_lbl}", hub, (0.85, 0.72, 0.1), 0)
+            add_solid(grp_wheel, f"Market_34mm_Rubber_{prefix}_{s_lbl}", rubber, (0.12, 0.12, 0.13), 0)
 
-build_exterior_and_glass()
+build_exterior_glass_lights()
 build_audio_enclosure()
-build_chassis_electronics_wheels()
+build_chassis_pcb_and_market_wheels()
 
 doc.recompute()
 if App.GuiUp:

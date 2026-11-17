@@ -13,6 +13,7 @@ Usage (headless display with Xvfb):
 
 import FreeCAD as App
 import Part
+import Mesh
 import os
 
 PROJECT_DIR = os.getcwd()
@@ -47,13 +48,26 @@ def run_macro(macro_name, doc_name, output_prefix):
     doc.saveAs(fcstd_path)
     print(f"Saved (GUI): {fcstd_path}")
 
+    # Export each solid object as STL (skip App::Part containers & Origin datum planes)
+    stl_count = 0
+    for obj in doc.Objects:
+        if obj.TypeId != "Part::Feature":
+            continue
+        if not hasattr(obj, "Shape") or obj.Shape is None or obj.Shape.isNull():
+            continue
+        stl_path = os.path.join(OUTPUT_DIR, f"{output_prefix}_{obj.Name}.stl")
+        Mesh.export([obj], stl_path)
+        print(f"  Exported: {stl_path}")
+        stl_count += 1
+    print(f"  Objects exported: {stl_count}")
+
     App.closeDocument(doc_name)
     return True
 
 
 macros = [
     ("freecad/FPV_RC_Direct_Print_Plate.py", "FPV_RC_Direct_Print_Plate", "print_plate"),
-    ("freecad/Ferrari_Enzo_Modular_Assembly.py", "Ferrari_Enzo_Modular_Assembly", "ferrari_enzo_modular"),
+    ("freecad/Ferrari_Enzo_Fixed_Assembly.py", "Ferrari_Enzo_Fixed_Assembly", "ferrari_enzo_fixed"),
 ]
 
 print("=" * 60)

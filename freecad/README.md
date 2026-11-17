@@ -9,7 +9,7 @@ removed — this directory now contains only the active build.
 
 | File | Generates | Purpose |
 |------|-----------|---------|
-| `Ferrari_Enzo_Modular_Assembly.py` | 20 parts in 6 `App::Part` modules | Full modular Enzo: body shell, separate glass/lenses, chassis + steering, wheels/TPU tires, sealed 36 mm speaker enclosure + gasket, low-profile PCB deck |
+| `Ferrari_Enzo_Fixed_Assembly.py` | 20 parts in 6 `App::Part` modules | Full modular Enzo: body shell, separate glass/lenses, chassis + steering, wheels/TPU tires, sealed 36 mm speaker enclosure + gasket, low-profile PCB deck |
 | `FPV_RC_Direct_Print_Plate.py` | 15 parts flat at Z=0 | Master print plate: chassis, gearbox cap, decks, knuckles, tie-rod, pushrod, rims, TPU tires |
 
 Generated artifacts live in `output/` (gitignored): 2 `.FCStd` documents
@@ -62,17 +62,33 @@ In the FreeCAD GUI: Macro → Macros... → select a script → Execute.
 | TPU gasket / tires | 95A TPU | 3 | 15% gyroid | |
 | Rims | PETG | 4 | 40% gyroid | Hub down on bed |
 
-## Modular Assembly Tree
+## Assembly Tree
 
 ```
-Ferrari_Enzo_Modular_Assembly
-├── 01_Exterior_Body       Main_Body_Shell_Enzo, Rear_Diffuser_And_Exhaust
-├── 02_Glass_And_Lights    Windshield insert, side glass L/R, headlight lenses L/R
+Ferrari_Enzo_Fixed_Assembly
+├── 01_Exterior_Body        Main_Body_Shell_Enzo, Rear_Diffuser_And_Exhaust
+├── 02_Glass_And_Lights     Flush windshield glass (camera aperture), tumbled side
+│                           glass L/R, angled headlight buckets + clear lenses L/R
 ├── 03_Chassis_And_Steering Main_Chassis_Base, Rear_Gearbox_Upper_Cap
-├── 04_Wheels_And_Tires    4× rims + 4× TPU tires (on-axle positions)
-├── 05_Audio_System        Sealed_Speaker_Enclosure_36mm, TPU_Speaker_Gasket
-└── 06_Electronics_Deck    Low_Profile_PCB_Deck (Z = 22 mm)
+├── 04_Market_Wheels_34mm   4× hub + 4× rubber tire reference parts (buy
+│                           "34mm N20 Smart Car Robot Wheel, 3mm D-shaft")
+├── 05_Audio_System         Sealed_Speaker_Enclosure_36mm
+└── 06_Electronics_Deck     Low_Profile_PCB_Deck (Z = 22 mm), Carrier_PCB_Top_Mounted_Ref
 ```
+
+Key corrections over previous iterations:
+
+- **PCB mounts ON TOP of the deck** (Z = 25.5 mm via 3.5 mm standoffs) —
+  the space underneath is fully occupied by the 2S 18650 battery; the
+  ESP32-CAM lens lands at Z ≈ 33 mm aimed through the windshield aperture
+- **Flush sloped glass** — windshield lofted along the 22° canopy rake,
+  side windows follow the 26° tumblehome, no flat boxes poking out
+- **Angled headlight buckets** — black reflector housings recessed into the
+  19.8° sloped front fenders with straight-ahead 5 mm LED bores and flush
+  clear lenses; don't 3D-print glass — cut 0.5 mm clear PETG sheet to the
+  exported STL outlines
+- **Off-the-shelf 34 × 15 mm N20 rubber wheels** (3 mm D-shaft hub) — no
+  TPU tire printing; wheel arches sized for full steering-lock clearance
 
 Every solid is refined with `removeSplitter()` and validated with
 `isValid()` — run Part → Check Geometry (BOPCheck) to confirm before printing.
