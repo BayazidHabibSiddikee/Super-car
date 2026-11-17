@@ -10,32 +10,71 @@ import FreeCAD as App
 import Part
 import math
 
+# =====================================================================
+# 0. PARAMETER VALIDATION
+# =====================================================================
+def validate_params(p):
+    errors = []
+    if p['TOL'] < 0 or p['TOL'] > 1.0:
+        errors.append(f"TOL {p['TOL']} must be 0..1 mm")
+    if p['WALL'] < 1.0:
+        errors.append(f"WALL {p['WALL']} too thin (min 1.0 mm)")
+    if p['BEARING_OD'] <= 6.0:
+        errors.append(f"BEARING_OD {p['BEARING_OD']} must exceed 6.0 mm (MR63ZZ)")
+    if p['REAR_SPAN'] < 30.0:
+        errors.append(f"REAR_SPAN {p['REAR_SPAN']} too narrow (min 30 mm)")
+    if p['FRONT_TRACK'] < 40.0:
+        errors.append(f"FRONT_TRACK {p['FRONT_TRACK']} too narrow (min 40 mm)")
+    if errors:
+        raise ValueError("Parameter validation failed:\n  " + "\n  ".join(errors))
+    return True
+
 doc = App.newDocument("RC_Car_Gearboxes_500g")
 
 # ==========================================
 # PARAMETRIC DIMENSIONS (in mm)
 # ==========================================
-TOL = 0.15                  # 3D printing clearance tolerance
-WALL = 3.0                  # Heavy-duty wall thickness for 500 g load
+P = {
+    'TOL':             0.15,                  # 3D printing clearance tolerance
+    'WALL':            3.0,                   # Heavy-duty wall thickness for 500 g load
+    'N20_W':           12.0 + 0.15,
+    'N20_H':           10.0 + 0.15,
+    'N20_L':           16.0,
+    'COUPLER_BAY_L':   14.0,
+    'BEARING_OD':      6.0 + 0.08,            # MR63ZZ outer diameter (6.08 mm snug press-fit)
+    'BEARING_W':       2.6,                   # MR63ZZ width (2.5 mm + 0.1 mm clearance)
+    'AXLE_CLEARANCE':  3.3,                   # 3 mm steel rod pass-through
+    'REAR_SPAN':       46.0,                  # Total width across rear bearing bosses
+    'SERVO_L':         23.1 + 0.15,           # SG92R body length (23.25 mm)
+    'SERVO_W':         12.5 + 0.15,           # SG92R body width (12.65 mm)
+    'SERVO_H':         16.0,                  # Pocket depth
+    'FRONT_TRACK':     64.0,                  # Distance between left & right kingpin pivots
+    'CHUB_GAP':        14.0,                  # Vertical opening inside C-hub
+    'CHUB_ARM_T':      3.5,                   # Thickness of upper/lower C-hub arms
+    'KINGPIN_D':       2.1,                   # M2 screw pivot hole
+}
 
-# Rear N20 + MR63ZZ Bearing Gearbox
-N20_W  = 12.0 + TOL         # 12.15 mm
-N20_H  = 10.0 + TOL         # 10.15 mm
-N20_L  = 16.0               # Gearbox + rear motor support length
-COUPLER_BAY_L = 14.0        # Space for 3 mm-to-3 mm shaft coupler or spur gear
-BEARING_OD  = 6.0 + 0.08    # MR63ZZ outer diameter (6.08 mm snug press-fit)
-BEARING_W   = 2.6           # MR63ZZ width (2.5 mm + 0.1 mm clearance)
-AXLE_CLEARANCE = 3.3        # 3 mm steel rod pass-through
-REAR_SPAN   = 46.0          # Total width across rear bearing bosses
+validate_params(P)
 
-# Front SG92R + C-Hub Steering Gearbox
-SERVO_L  = 23.1 + TOL       # SG92R body length (23.25 mm)
-SERVO_W  = 12.5 + TOL       # SG92R body width (12.65 mm)
-SERVO_H  = 16.0             # Pocket depth
-FRONT_TRACK = 64.0          # Distance between left & right kingpin pivots
-CHUB_GAP  = 14.0            # Vertical opening inside C-hub
-CHUB_ARM_T = 3.5            # Thickness of upper/lower C-hub arms
-KINGPIN_D = 2.1             # M2 screw pivot hole
+TOL = P['TOL']
+WALL = P['WALL']
+
+# Unpack all parameters for use in build functions
+N20_W  = P['N20_W']
+N20_H  = P['N20_H']
+N20_L  = P['N20_L']
+COUPLER_BAY_L = P['COUPLER_BAY_L']
+BEARING_OD  = P['BEARING_OD']
+BEARING_W   = P['BEARING_W']
+AXLE_CLEARANCE = P['AXLE_CLEARANCE']
+REAR_SPAN   = P['REAR_SPAN']
+SERVO_L  = P['SERVO_L']
+SERVO_W  = P['SERVO_W']
+SERVO_H  = P['SERVO_H']
+FRONT_TRACK = P['FRONT_TRACK']
+CHUB_GAP  = P['CHUB_GAP']
+CHUB_ARM_T = P['CHUB_ARM_T']
+KINGPIN_D = P['KINGPIN_D']
 
 # ==========================================
 # 1. REAR GEARBOX (N20 + DUAL MR63ZZ)
@@ -233,6 +272,39 @@ build_knuckle("Steering_Knuckle_Left",  -1, -FRONT_TRACK / 2.0 - 14.0, 74.0)
 build_knuckle("Steering_Knuckle_Right",  1,  FRONT_TRACK / 2.0 + 14.0, 74.0)
 
 doc.recompute()
+
+# ==========================================
+# GEOMETRY VALIDATION
+# ==========================================
+print("\n=== Geometry Validation ===")
+all_valid = True
+for obj_label in ["Rear_Gearbox_Lower", "Rear_Gearbox_Upper",
+                  "Front_Steering_Bridge", "Steering_Knuckle_Left", "Steering_Knuckle_Right"]:
+    try:
+        obj = doc.getObject(obj_label)
+        if obj is None:
+            print(f"ERROR: {obj_label} not found in document")
+            all_valid = False
+            continue
+        result = obj.Shape.checkGeometry()
+        if isinstance(result, tuple):
+            valid = result[0]
+        else:
+            valid = bool(result)
+        if valid:
+            print(f"OK: {obj_label} — valid solid")
+        else:
+            print(f"WARNING: {obj_label} has invalid geometry")
+            all_valid = False
+    except Exception as e:
+        print(f"ERROR: Could not check {obj_label}: {e}")
+        all_valid = False
+
+if all_valid:
+    print("All 5 parts passed geometry check.")
+else:
+    print("Some parts failed geometry check — review before exporting STL.")
+
 if App.GuiUp:
     import FreeCADGui as Gui
     Gui.ActiveDocument.ActiveView.viewAxonometric()

@@ -2,60 +2,132 @@
 """
 complete_chassis_v2.py — FreeCAD Python Macro
 Supercar: Complete 500 g Rolling Chassis + Upper Deck
-Integrated rear N20 + dual MR63ZZ gearbox, front SG92R + C-hub steering,
+Production-quality v2 with parametric validation and geometry checks.
+
+Integrates: rear N20 + dual MR63ZZ gearbox, front SG92R + C-hub steering,
 2S 18650 battery bay, 3 W speaker acoustic deck, carrier PCB standoffs,
 15 deg forward-tilted ESP32-CAM nose mount.
+
 Run: FreeCAD -> Macro -> Macros... -> Create -> paste -> Execute (Ctrl+F6)
+Verify: Part Workbench -> Check Geometry (0 invalid shapes expected)
 """
 
 import FreeCAD as App
 import Part
 import math
 
+# =====================================================================
+# 0. PARAMETER VALIDATION
+# =====================================================================
+def validate_params(p):
+    """Validate all chassis parameters before building. Raises ValueError on bad input."""
+    errors = []
+    if p['TOL'] < 0 or p['TOL'] > 1.0:
+        errors.append(f"TOL {p['TOL']} must be 0..1 mm")
+    if p['FLOOR_T'] < 1.0:
+        errors.append(f"FLOOR_T {p['FLOOR_T']} too thin (min 1.0 mm)")
+    if p['WHEELBASE'] < 50.0:
+        errors.append(f"WHEELBASE {p['WHEELBASE']} too short (min 50 mm)")
+    if p['CHASSIS_W'] < 30.0:
+        errors.append(f"CHASSIS_W {p['CHASSIS_W']} too narrow (min 30 mm)")
+    if p['TRAY_Z'] < p['FLOOR_T'] + 5.0:
+        errors.append(f"TRAY_Z {p['TRAY_Z']} too low above floor (min FLOOR_T+5)")
+    if p['BEARING_OD'] <= p['AXLE_D']:
+        errors.append(f"BEARING_OD {p['BEARING_OD']} must exceed AXLE_D {p['AXLE_D']}")
+    if errors:
+        raise ValueError("Parameter validation failed:\n  " + "\n  ".join(errors))
+    return True
+
 doc = App.newDocument("Complete_FPV_RC_Chassis_500g_v2")
 
-# ==========================================
-# MASTER CHASSIS & HARDWARE PARAMETERS (mm)
-# ==========================================
-TOL        = 0.15
-FLOOR_T    = 3.0               # Heavy-duty 3 mm structural belly pan for 500 g load
-WHEELBASE  = 115.0             # Front axle to Rear axle distance
-CHASSIS_W  = 54.0              # Main center deck width
+# =====================================================================
+# 1. MASTER CHASSIS & HARDWARE PARAMETERS (mm)
+# =====================================================================
+P = {
+    # Manufacturing / structural
+    'TOL':        0.15,      # 3D printing clearance tolerance
+    'FLOOR_T':    3.0,       # Heavy-duty 3 mm structural belly pan for 500 g load
+    'WHEELBASE':  115.0,     # Front axle to Rear axle distance
+    'CHASSIS_W':  54.0,      # Main center deck width
 
-# Updated Upper Deck Height for 2S 18650 + Bottom DFPlayer Mini Clearance
-TRAY_Z     = 37.0              # Raised from 23.0 mm -> 37.0 mm (13.5 mm clear above 2S battery)
-PILLAR_R   = 3.5               # Thickened 7 mm diameter pillars for 500 g torsional stiffness
+    # Upper deck height (raised for bottom-mounted DFPlayer + 2S battery clearance)
+    'TRAY_Z':     37.0,      # Raised from 23.0 -> 37.0 mm (13.5 mm clear above 2S battery)
+    'PILLAR_R':   3.5,       # Thickened 7 mm diameter pillars for 500 g torsional stiffness
 
-# Rear N20 + Dual MR63ZZ Bearing Gearbox
-N20_W       = 12.0 + TOL
-N20_H       = 10.0 + TOL
-N20_L       = 16.0
-COUPLER_BAY_L = 14.0
-BEARING_OD  = 6.08             # MR63ZZ press-fit (6.0 mm + 0.08 mm)
-BEARING_W   = 2.6
-AXLE_D      = 3.3              # 3 mm steel rod clearance
-REAR_SPAN   = 48.0
+    # Rear N20 + Dual MR63ZZ Bearing Gearbox
+    'N20_W':       12.0 + 0.15,
+    'N20_H':       10.0 + 0.15,
+    'N20_L':       16.0,
+    'COUPLER_BAY_L': 14.0,
+    'BEARING_OD':   6.08,    # MR63ZZ press-fit (6.0 mm + 0.08 mm)
+    'BEARING_W':    2.6,
+    'AXLE_D':       3.3,     # 3 mm steel rod clearance
+    'REAR_SPAN':    48.0,
 
-# Front SG92R + C-Hub Steering Bridge
-SERVO_L   = 23.1 + TOL
-SERVO_W   = 12.5 + TOL
-SERVO_H   = 15.5
-FRONT_TRACK = 66.0
-CHUB_GAP  = 14.0
-CHUB_ARM_T = 3.5
-KINGPIN_D = 2.1                # M2 kingpin screw hole
+    # Front SG92R + C-Hub Steering Bridge
+    'SERVO_L':    23.1 + 0.15,
+    'SERVO_W':    12.5 + 0.15,
+    'SERVO_H':    15.5,
+    'FRONT_TRACK': 66.0,
+    'CHUB_GAP':   14.0,
+    'CHUB_ARM_T': 3.5,
+    'KINGPIN_D':  2.1,       # M2 kingpin screw hole
 
-# Payload Bays (2S 18650 Battery, Speaker, Carrier PCB, ESP32-CAM)
-BAT_L   = 69.0                 # 2S 18650 holder length
-BAT_W   = 38.0                 # 2S 18650 holder width
-SPK_D   = 36.5                 # 36 mm round 3 W speaker diameter
-PCB_L   = 46.0                 # Carrier PCB length
-PCB_W   = 32.0                 # Carrier PCB width
+    # Payload Bays (2S 18650 Battery, Speaker, Carrier PCB, ESP32-CAM)
+    'BAT_L':      69.0,      # 2S 18650 holder length
+    'BAT_W':      38.0,      # 2S 18650 holder width
+    'SPK_D':      36.5,      # 36 mm round 3 W speaker diameter
+    'PCB_L':      46.0,      # Carrier PCB length
+    'PCB_W':      32.0,      # Carrier PCB width
+}
 
-# ==========================================
-# 1. INTEGRATED BASE CHASSIS + GEARBOX HOUSINGS
-# ==========================================
+validate_params(P)
+
+# Unpack for readability in build functions
+TOL        = P['TOL']
+FLOOR_T    = P['FLOOR_T']
+WHEELBASE  = P['WHEELBASE']
+CHASSIS_W  = P['CHASSIS_W']
+TRAY_Z     = P['TRAY_Z']
+PILLAR_R   = P['PILLAR_R']
+
+N20_W       = P['N20_W']
+N20_H       = P['N20_H']
+N20_L       = P['N20_L']
+COUPLER_BAY_L = P['COUPLER_BAY_L']
+BEARING_OD  = P['BEARING_OD']
+BEARING_W   = P['BEARING_W']
+AXLE_D      = P['AXLE_D']
+REAR_SPAN   = P['REAR_SPAN']
+
+SERVO_L   = P['SERVO_L']
+SERVO_W   = P['SERVO_W']
+SERVO_H   = P['SERVO_H']
+FRONT_TRACK = P['FRONT_TRACK']
+CHUB_GAP  = P['CHUB_GAP']
+CHUB_ARM_T = P['CHUB_ARM_T']
+KINGPIN_D = P['KINGPIN_D']
+
+BAT_L   = P['BAT_L']
+BAT_W   = P['BAT_W']
+SPK_D   = P['SPK_D']
+PCB_L   = P['PCB_L']
+PCB_W   = P['PCB_W']
+
+# =====================================================================
+# 2. BUILD FUNCTIONS
+# =====================================================================
 def build_complete_base():
+    """
+    Builds the integrated lower chassis with:
+      A. Main Center Belly Pan + Side Stiffener Rails
+      B. Integrated Rear N20 + Bearing Gearbox Lower Housing
+      C. 2S 18650 Battery Retention Cradle
+      D. Reinforced Upper Deck Pillars
+      E. Integrated Front SG92R Servo + C-Hub Steering Crossmember
+      F. Forward Angled ESP32-CAM Nose Bumper & Headlight Pods
+    Returns: (chassis_shape, rear_lower, rear_upper)
+    """
     rear_y0   = 0.0
     gb_len    = N20_L + COUPLER_BAY_L + 6.0
     axle_y    = rear_y0 + 3.0 + N20_L + (COUPLER_BAY_L / 2.0)   # Y = 27.0 mm
@@ -213,14 +285,18 @@ def build_complete_base():
     bumper = bumper.cut(cam_hole).cut(led_l).cut(led_r)
     chassis = chassis.fuse(bumper)
 
-    obj_base = doc.addObject("Part::Feature", "Main_Chassis_With_Gearboxes")
-    obj_base.Shape = chassis
+    return chassis, rear_lower, rear_upper
 
-    obj_cap = doc.addObject("Part::Feature", "Rear_Gearbox_Upper_Cap")
-    obj_cap.Shape = rear_upper
-    obj_cap.Placement.Base = App.Vector(0, 0, 18.0)
 
-    # --- G. Upper Electronics & 3 W Speaker Acoustic Deck (At Z = TRAY_Z) ---
+def build_upper_deck(chassis_z_base=0.0):
+    """
+    Builds the Upper Electronics & 3 W Speaker Acoustic Deck at Z = TRAY_Z.
+    Includes: speaker ring, 4x M2 PCB standoffs, DFPlayer cutout window.
+    Returns: upper_deck_shape
+    """
+    tray_y0  = 38.0
+    tray_len = 90.0
+
     upper_deck = Part.makeBox(CHASSIS_W, tray_len, 2.5,
                               App.Vector(-CHASSIS_W / 2.0, tray_y0, TRAY_Z))
 
@@ -259,14 +335,14 @@ def build_complete_base():
                              App.Vector(-11.0, pcb_y0 + 1.0, TRAY_Z - 1.0))
     upper_deck = upper_deck.cut(df_cutout)
 
-    obj_tray = doc.addObject("Part::Feature", "Upper_PCB_And_Speaker_Deck")
-    obj_tray.Shape = upper_deck
-    obj_tray.Placement.Base = App.Vector(0, 0, 15.0)   # Exploded upward for easy export
+    return upper_deck
 
-# ==========================================
-# 2. FRONT ACKERMANN STEERING KNUCKLES
-# ==========================================
+
 def build_knuckle(name, side, x_pos, y_pos):
+    """
+    Builds one front Ackermann steering knuckle.
+    side: -1 (left) or +1 (right)
+    """
     knuckle_h = CHUB_GAP - 0.6
     z_base    = CHUB_ARM_T + 0.3
     barrel = Part.makeCylinder(4.2, knuckle_h,
@@ -292,22 +368,78 @@ def build_knuckle(name, side, x_pos, y_pos):
     tie_hole = Part.makeCylinder(0.85, 6.0, App.Vector(tip_x, tip_y, z_base))
 
     knuckle = barrel.fuse(stub).fuse(arm).cut(kp_bore).cut(stub_bore).cut(tie_hole)
-    obj = doc.addObject("Part::Feature", name)
-    obj.Shape = knuckle
+    return knuckle
 
-# ==========================================
-# BUILD ALL
-# ==========================================
-build_complete_base()
-build_knuckle("Steering_Knuckle_Left",  -1, -FRONT_TRACK / 2.0 - 15.0, 142.0)
-build_knuckle("Steering_Knuckle_Right",  1,  FRONT_TRACK / 2.0 + 15.0, 142.0)
 
+# =====================================================================
+# 3. ASSEMBLE DOCUMENT OBJECTS
+# =====================================================================
+chassis, rear_lower, rear_upper = build_complete_base()
+
+obj_base = doc.addObject("Part::Feature", "Main_Chassis_With_Gearboxes")
+obj_base.Shape = chassis
+
+obj_cap = doc.addObject("Part::Feature", "Rear_Gearbox_Upper_Cap")
+obj_cap.Shape = rear_upper
+obj_cap.Placement.Base = App.Vector(0, 0, 18.0)   # Exploded upward for inspection
+
+upper_deck = build_upper_deck()
+obj_tray = doc.addObject("Part::Feature", "Upper_PCB_And_Speaker_Deck")
+obj_tray.Shape = upper_deck
+obj_tray.Placement.Base = App.Vector(0, 0, 15.0)   # Exploded upward for export
+
+# Front steering knuckles (positioned at front axle Y = 142.0)
+knuckle_l = build_knuckle("Steering_Knuckle_Left",  -1, -FRONT_TRACK / 2.0 - 15.0, 142.0)
+knuckle_r = build_knuckle("Steering_Knuckle_Right",  1,  FRONT_TRACK / 2.0 + 15.0, 142.0)
+# build_knuckle already adds objects to doc via addObject inside; but we refactored to return shape.
+# Re-add explicitly:
+obj_kl = doc.addObject("Part::Feature", "Steering_Knuckle_Left")
+obj_kl.Shape = knuckle_l
+obj_kr = doc.addObject("Part::Feature", "Steering_Knuckle_Right")
+obj_kr.Shape = knuckle_r
+
+# =====================================================================
+# 4. GEOMETRY VALIDATION
+# =====================================================================
+def check_geometry(obj):
+    """Run Part.CheckGeometry and report invalid shapes."""
+    try:
+        checker = obj.Shape.checkGeometry()
+        # checker is a tuple: (is_valid, message)
+        if isinstance(checker, tuple):
+            valid, msg = checker
+        else:
+            valid = bool(checker)
+            msg = ""
+        if not valid:
+            print(f"WARNING: {obj.Label} has invalid geometry: {msg}")
+            return False
+        print(f"OK: {obj.Label} — valid solid")
+        return True
+    except Exception as e:
+        print(f"ERROR: Could not check geometry for {obj.Label}: {e}")
+        return False
+
+print("\n=== Geometry Validation ===")
+all_valid = True
+for obj in [obj_base, obj_cap, obj_tray, obj_kl, obj_kr]:
+    all_valid = all_valid and check_geometry(obj)
+
+if all_valid:
+    print("All 5 parts passed geometry check.")
+else:
+    print("Some parts failed geometry check — review before exporting STL.")
+
+# =====================================================================
+# 5. VIEW
+# =====================================================================
 doc.recompute()
 if App.GuiUp:
     import FreeCADGui as Gui
     Gui.ActiveDocument.ActiveView.viewAxonometric()
     Gui.SendMsgToActiveView("ViewFit")
 
-print("complete_chassis_v2.py: generated ->")
+print("\ncomplete_chassis_v2.py: generated 5 parts ->")
 print("  Main_Chassis_With_Gearboxes, Rear_Gearbox_Upper_Cap,")
 print("  Upper_PCB_And_Speaker_Deck, Steering_Knuckle_Left/Right")
+print("Next: Export each as STL, slice PETG (4 walls, 40% gyroid), print & test-fit.")
