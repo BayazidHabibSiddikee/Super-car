@@ -11,6 +11,7 @@ import FreeCAD as App
 import Part
 import Mesh
 import os
+import sys
 
 PROJECT_DIR = os.getcwd()
 OUTPUT_DIR = os.path.join(PROJECT_DIR, "freecad", "output")
@@ -67,10 +68,9 @@ def run_macro(macro_name, doc_name, output_prefix):
 # Run all macros
 # ==========================================
 macros = [
-    ("freecad/rc_gearboxes.py", "RC_Car_Gearboxes_500g", "gearboxes"),
-    ("freecad/complete_chassis_v2.py", "Complete_FPV_RC_Chassis_500g_v2", "chassis_v2"),
-    ("freecad/body_shell.py", "FPV_RC_Aerodynamic_Shell", "body_shell"),
-    ("freecad/wheels_tires.py", "RC_Car_Wheels_And_Tires_500g", "wheels_tires"),
+    ("freecad/FPV_RC_Direct_Print_Plate.py", "FPV_RC_Direct_Print_Plate", "print_plate"),
+    ("freecad/Jeep_And_Ferrari_Shells.py", "Jeep_And_Ferrari_RC_Shells", "shells_jeep_ferrari"),
+    ("freecad/Ferrari_F40_Upgraded_Shell.py", "Ferrari_F40_Upgraded_Shell", "ferrari_upgraded"),
 ]
 
 print("=" * 60)
