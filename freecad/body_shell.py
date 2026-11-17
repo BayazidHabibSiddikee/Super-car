@@ -118,7 +118,7 @@ def build_aerodynamic_shell():
         clip_len = 34.0
         clip_y0  = 63.0
         # Vertical inner skirt extension reaching Z = -1.5 mm
-        skirt_x  = side * (hw_in := INNER_W / 2.0 - 0.8) - (0.8 if side == 1 else 0.0)
+        skirt_x  = side * (INNER_W / 2.0 - 0.8) - (0.8 if side == 1 else 0.0)
         skirt = Part.makeBox(0.8, clip_len, 4.0, App.Vector(skirt_x, clip_y0, -1.5))
 
         # Inward bevel snap lip at Z = -1.5 to 0.0 mm that hooks under chassis floor (Z = 0)

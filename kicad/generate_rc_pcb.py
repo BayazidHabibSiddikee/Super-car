@@ -107,10 +107,14 @@ lines.append(' )')
 # 5. U2: RZ7889 Motor Driver (SOIC-8 on Bottom Copper B.Cu at X=16.0, Y=14.0)
 lines.append(' (footprint "RZ7889_SOIC8" (layer "B.Cu") (at 16.0 14.0)')
 rz_pins = [
-    (1, -2.7, -1.905, "+5V_MAIN", 3), (2, -2.7, -0.635, "M1_FWD", 5),
-    (3, -2.7, 0.635,  "M1_REV", 6),   (4, -2.7, 1.905,  "GND", 1),
-    (5,  2.7, 1.905,  "M1_A", 12),    (6,  2.7, 0.635,  "M1_A", 12),
-    (7,  2.7, -0.635, "M1_B", 13),    (8,  2.7, -1.905, "M1_B", 13)
+    (1, -2.7, -1.905, "GND", 1),       # Pin 1: GND
+    (2, -2.7, -0.635, "M1_FWD", 5),    # Pin 2: BI input (from GPIO14)
+    (3, -2.7, 0.635,  "M1_REV", 6),    # Pin 3: FI input (from GPIO15)
+    (4, -2.7, 1.905,  "GND", 1),       # Pin 4: GND
+    (5,  2.7, 1.905,  "VBAT", 2),      # Pin 5: VCC -> VBAT (7.4V motor supply)
+    (6,  2.7, 0.635,  "VBAT", 2),      # Pin 6: VCC -> VBAT (7.4V motor supply)
+    (7,  2.7, -0.635, "M1_A", 12),     # Pin 7: OUT1 -> M1_A motor +
+    (8,  2.7, -1.905, "M1_B", 13)      # Pin 8: OUT2 -> M1_B motor -
 ]
 for pnum, px, py, nname, nid in rz_pins:
     lines.append(pad_smd(str(pnum), 16.0 + px, 14.0 + py, 1.6, 0.65, "B.Cu", nid, nname))
@@ -144,6 +148,11 @@ lines.append(track(4.57, 23.08, 13.3, 14.635, 0.8, "B.Cu", 6))   # M1_REV (GPIO1
 # Motor Driver High-Current Outputs (1.4 mm wide)
 lines.append(track(18.7, 15.905, 18.0, 2.5, 1.4, "B.Cu", 12))    # M1_A -> J2_1
 lines.append(track(18.7, 12.095, 20.54, 2.5, 1.4, "B.Cu", 13))   # M1_B -> J2_2
+# RZ7889 Power: VBAT to Pins 5&6, GND to Pins 1&4
+lines.append(track(14.04, 2.5, 18.7, 15.905, 1.4, "B.Cu", 2))    # VBAT (J1) -> RZ7889 Pin 5
+lines.append(track(18.7, 15.905, 18.7, 14.635, 1.4, "B.Cu", 2))  # VBAT: Pin 5 -> Pin 6
+lines.append(track(13.3, 12.095, 11.5, 2.5, 1.2, "B.Cu", 1))     # GND: RZ7889 Pin 1 -> J1 GND
+lines.append(track(13.3, 15.905, 13.3, 12.095, 1.2, "B.Cu", 1))  # GND: Pin 4 -> Pin 1
 # Servo PWM & Power
 lines.append(track(4.57, 28.16, 18.54, 43.5, 0.8, "B.Cu", 7))    # SERVO_PWM (GPIO13 -> J3_SIG)
 # JQ6500 Serial RX & Speaker Lines
