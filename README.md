@@ -35,7 +35,7 @@ supercar/
 ├── firmware/
 │   └── FPV_Car_DFPlayer_AutoResume.ino
 ├── freecad/
-│   ├── Ferrari_Enzo_Fixed_Assembly.py  # Fixed Enzo: flush glass, sloped headlights, market wheels (6 App::Part modules)
+│   ├── Enzo_FPV_v2.py  # Fixed Enzo: flush glass, sloped headlights, market wheels (6 App::Part modules)
 │   ├── FPV_RC_Direct_Print_Plate.py      # Master print plate (15 parts flat at Z=0)
 │   └── run_headless.py                   # Headless batch runner → output/*.FCStd + *.stl
 ├── kicad/

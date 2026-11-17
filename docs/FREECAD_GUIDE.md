@@ -1,51 +1,60 @@
 # FreeCAD Mechanical Design Guide
 
-Ferrari Enzo low-profile RC body — all scripts run inside FreeCAD via
+Ferrari Enzo FPV v2 RC car — all scripts run inside FreeCAD via
 Macro → Macros → Create → Execute (Ctrl+F6), or batch via
 `freecad/run_gui.py` (GUI-openable output) / `freecad/run_headless.py`
 (console-only). Print in PETG (PLA too brittle). Wheels are bought,
-not printed.
+not printed; glass is cut from clear PETG sheet.
 
 ## Prerequisites
 
 - FreeCAD 1.0+ with `Part` workbench
 - Units: mm
-- Materials: PETG for structural/cosmetic parts; 0.5–1.0 mm clear PETG
-  sheet (cut to shape, glued with B-7000) for glass and headlight lenses;
-  off-the-shelf 34 × 15 mm N20 rubber wheels (3 mm D-shaft hub)
+- Materials: PETG for printed parts; 0.5 mm clear PETG sheet (glued with
+  B-7000) for glass and headlight lenses; off-the-shelf 34 × 15 mm N20
+  rubber wheels (3 mm D-shaft hub)
 
 ## Scripts
 
-### `freecad/Ferrari_Enzo_Fixed_Assembly.py` — Full Enzo Assembly (Current Design)
+### `freecad/Enzo_FPV_v2.py` — Ground-Up Rebuild v2 (Current Design)
 
-Generates 22 validated solids organized into 6 `App::Part` containers:
+Generates 34 validated solids in 8 `App::Part` containers. Axes:
+X = left/right, Y = rear(0) → nose(210), Z = up (ground = 0).
 
-- **01_Exterior_Body** — `Main_Body_Shell_Enzo` (38.5 mm tall × 74 mm wide,
-  2 mm walls, outer-only wheel arches preserving the F1 nose, flush sloped
-  window cutouts, rocker snap clips), `Rear_Diffuser_And_Exhaust`
-  (5 strakes + quad exhaust)
-- **02_Glass_And_Lights** — `Front_Windshield_Flush_Glass` (lofted along the
-  22° canopy rake, Ø10.4 mm camera aperture), `Side_Glass_L/R` (26°
-  tumblehome), `Headlight_Bucket_L/R` (black reflector housings with
-  straight-ahead 5 mm LED bores), `Headlight_Clear_Lens_L/R` (flush covers
-  following the 19.8° fender slope)
-- **03_Chassis_And_Steering** — `Main_Chassis_Base` (2.5 mm belly pan, side
-  rails, integrated rear N20 gearbox lower half with MR63ZZ bearing seats,
-  SG92R servo pocket, front C-hub bridge), `Rear_Gearbox_Upper_Cap`
-- **04_Market_Wheels_34mm** — hub + rubber tire reference solids (Ø34 ×
-  15 mm) for fitment checking; buy the real wheels: "34mm N20 Smart Car
-  Robot Wheel (3mm D-shaft)"
-- **05_Audio_System** — `Sealed_Speaker_Enclosure_36mm` (~15.5 cm³ sealed
-  chamber atop the rear gearbox, 36.2 mm bore, gasket seat)
-- **06_Electronics_Deck** — `Low_Profile_PCB_Deck` at Z = 22 mm with 4× M2
-  standoffs ON TOP, plus `Carrier_PCB_Top_Mounted_Ref` (46 × 32 mm board
-  reference; ESP32-CAM lens lands at Z ≈ 33 mm through the windshield)
+- **01_Body** — `Body_Shell` (210 × 91 × 51.5 mm lofted BSpline shell,
+  2.4 mm walls, round wheel arches for 34 mm wheels, tumblehome cabin,
+  lowered center hood, engine-cover louvers, M2 screw bosses),
+  `Exhaust_Tips`
+- **02_Glass_And_Lights** — planar `Windshield_Glass`, `Side_Glass_L/R`
+  (all lying flat in 1 mm rebates, 0.5 mm PETG), `Headlight_Lens_L/R`
+  flush with the 32.7° fender slope, `Headlight_Bucket_L/R` black
+  reflector housings with +Y 5 mm LED bores
+- **03_Chassis** — flat plate (3.5–5.5 mm) with battery pillars, dual N20
+  transverse motor tunnels at the rear axle, front fork + kingpin bridge,
+  SG92R servo cradle, open nose camera cradle, body-screw holes
+- **04_Steering** — `Knuckle_L/R` (kingpin pivots, Ackermann arms aimed at
+  the rear axle center), `Tie_Rod`
+- **05_Wheels_34mm** — tyre + hub reference solids ×4 (Ø34 × 15 mm market
+  wheels: buy "34mm N20 Smart Car Robot Wheel (3mm D-shaft)")
+- **06_Drivetrain_Ref** — `N20_Motor_L/R` (one per rear wheel, shaft
+  straight into the wheel), `Servo_SG92R_Ref`, `Servo_Horn_Ref`
+- **07_Electronics_Ref** — `Battery_2S18650_Ref`, `Electronics_Deck`
+  (Z = 25–26.6), `Carrier_PCB_46x32`, `ESP32CAM_Board_Ref`, `MH_M18_Ref`,
+  `JQ6500_Ref`, `OV2640_Camera_Ref` (nose camera on a flex cable)
+- **08_Audio** — `Speaker_Box_36mm` (sealed, louvered lid hole),
+  `Speaker_36mm_Ref`
 
 Key dimensions:
-- Vehicle: 169 × 74 × 38.5 mm (~1:27 Enzo proportions)
-- Wheelbase: 115 mm; chassis width: 54 mm (54.8 mm snap-fit cavity)
-- Front track: 64 mm; rear gearbox span: 48 mm
-- Every solid is `removeSplitter()`-refined and `isValid()`-checked
+- Scale ~1:22.4 (210 × 91 × 51.5 mm); wheelbase 118 mm
+- Wheel inner face |X| = 29.5 mm (outer 44.5 mm); axle height Z = 17 mm
+- Battery top Z = 25 mm; electronics deck directly above it
+
+### Built-in interference checker
+
+The macro ends with a boolean intersection report over all critical part
+pairs. Baseline: **0.5 mm³ threshold — 3 intentional press-fits** (body
+screw bosses, headlight buckets); wheels, knuckles, chassis, electronics
+and audio are clean. Re-run after modifying any dimension.
 
 ### `freecad/FPV_RC_Direct_Print_Plate.py` — Master Print Plate
 
@@ -60,14 +69,14 @@ steering knuckles L/R, Ackermann tie-rod, servo pushrod link, 4 rims,
 
 ## Verification Checklist
 
+- [ ] Interference report: only the 3 intentional press-fit pairs
 - [ ] Part → Check Geometry (BOPCheck): 0 invalid shapes on all parts
-- [ ] Dry-fit MR63ZZ bearings and N20 motor in rear gearbox
-- [ ] Speaker drops into `Sealed_Speaker_Enclosure_36mm`
-- [ ] 34 mm market wheels press onto 3 mm D-shaft axle and knuckle pins
-      with full steering-lock clearance
-- [ ] PCB seats on the 4 top-of-deck standoffs; camera aligned to the
-      windshield aperture
+- [ ] 34 mm market wheels press onto the N20 shafts / kingpin pins with
+      full steering-lock clearance
+- [ ] PCB seats on the deck standoffs; OV2640 nose camera aligns with the
+      Ø7.5 mm nose window
 - [ ] Cut glass/lens shapes from clear PETG sheet using the exported STL
-      outlines; glue behind window openings with B-7000
-- [ ] Spin rear wheels by hand: N20 gearbox turns smooth, zero binding
-- [ ] Orient shell upside-down on roof for printing
+      outlines; glue into rebates with B-7000
+- [ ] Speaker drops into `Speaker_Box_36mm` under the louvered cover
+- [ ] Spin rear wheels by hand: motors turn smooth, zero binding
+- [ ] Orient body shell upside-down on roof for printing

@@ -1,42 +1,46 @@
-# FreeCAD Mechanical Design — Supercar RC Car (Ferrari Enzo)
+# FreeCAD Mechanical Design — Supercar RC Car (Ferrari Enzo FPV v2)
 
 Current-design macros for the ESP32-CAM FPV Ferrari Enzo RC car.
-All older/superseded designs (Jeep Wrangler, F40, F40 Competizione,
-single-piece Enzo shell, v1 chassis/gearbox/wheel scripts) have been
-removed — this directory now contains only the active build.
+All superseded designs (Jeep, F40, single-piece shells, low-profile and
+fixed assemblies) have been removed — this directory contains only the
+active build.
 
 ## Files
 
 | File | Generates | Purpose |
 |------|-----------|---------|
-| `Ferrari_Enzo_Fixed_Assembly.py` | 20 parts in 6 `App::Part` modules | Full modular Enzo: body shell, separate glass/lenses, chassis + steering, wheels/TPU tires, sealed 36 mm speaker enclosure + gasket, low-profile PCB deck |
-| `FPV_RC_Direct_Print_Plate.py` | 15 parts flat at Z=0 | Master print plate: chassis, gearbox cap, decks, knuckles, tie-rod, pushrod, rims, TPU tires |
+| `Enzo_FPV_v2.py` | 34 parts in 8 `App::Part` modules | Ground-up rebuild v2: body shell, flush glass + angled headlights, chassis, Ackermann steering, 34 mm market wheels, dual N20 drivetrain, electronics + audio references — with a built-in interference checker |
+| `FPV_RC_Direct_Print_Plate.py` | 15 parts flat at Z=0 | Master print plate: chassis, gearbox cap, decks, knuckles, tie-rod, pushrod, rims, TPU tires (earlier printed-wheel set; market wheels are now the default) |
+| `run_gui.py` | — | GUI-mode batch runner (xvfb): produces GUI-openable `.FCStd` + STLs in one pass |
+| `run_headless.py` | — | Console-only batch runner (FreeCADCmd); faster, but its `.FCStd` can show an empty tree in the GUI |
 
-Generated artifacts live in `output/` (gitignored): 2 `.FCStd` documents
-plus per-part `.stl` exports.
+Generated artifacts live in `output/` (gitignored).
 
-> **Important:** `output/*.FCStd` files are saved in **GUI mode** (via
-> `run_gui.py`) so they embed `GuiDocument.xml` and open with full tree +
-> colors in the FreeCAD GUI. `run_headless.py` (FreeCADCmd) is faster but
-> produces console-saved files that can show an empty tree in the GUI —
-> use it only when you will re-save or post-process headlessly.
-
-## Vehicle Specifications
+## Vehicle Specifications (v2)
 
 | Parameter | Value |
 |-----------|-------|
-| Length × Width × Height | 169 × 74 × 38.5 mm (~1:27 Enzo proportions) |
-| Wheelbase | 115 mm |
-| Chassis width | 54 mm (54.8 mm snap-fit cavity) |
-| Electronics deck height | 22 mm (above 2S 18650 battery) |
-| Speaker | 36 mm 3 W 4 Ω in sealed ~15.5 cm³ chamber atop rear gearbox |
-| Rear drivetrain | N20 motor + MR63ZZ bearings, 48 mm span gearbox |
-| Front steering | SG92R servo, Ackermann C-hub linkage, 66 mm track |
+| Scale | ~1:22.4 (210 × 91 × 51.5 mm) — 34 mm market wheels are scale-correct |
+| Wheelbase | 118 mm (rear axle Y=49, front axle Y=167) |
+| Wheels | Off-the-shelf 34 mm × 15 mm N20 rubber wheels, 3 mm D-shaft hub |
+| Rear drivetrain | 2× N20 motors (one per rear wheel), transverse, shaft straight into wheel |
+| Front steering | SG92R servo + kingpin knuckles, Ackermann arms aimed at the rear axle |
+| Chassis | Flat plate 3.5–5.5 mm + battery pillars, servo cradle, nose camera cradle |
+| Electronics deck | Z = 25–26.6 mm above the 2S 18650 holder (battery top Z = 25) |
+| Carrier PCB | 46 × 32 mm on-deck standoffs; ESP32-CAM nose camera on flex cable |
+| Audio | 36 mm speaker in sealed box over rear axle, louvered engine cover |
+| Glass | 0.5 mm clear PETG sheet glued into 1 mm rebates (windshield, side windows, headlight lenses) |
+
+## Interference Check (built into the macro)
+
+`Enzo_FPV_v2.py` runs a boolean intersection report over all critical
+part pairs at the end of the build. Baseline result: **3 intentional
+press-fits only** (body screw bosses into the shell, headlight buckets
+into their pockets) — no real collisions. Wheels/knuckles/chassis are clean.
 
 ## How to Run
 
-GUI-compatible batch (regenerates `.FCStd` + colors + view data that open
-correctly in the FreeCAD GUI):
+GUI-compatible batch (regenerates `.FCStd` + colors + view data + STLs):
 
 ```bash
 cd <project root>
@@ -51,44 +55,29 @@ flatpak run --command=FreeCADCmd org.freecad.FreeCAD -c "exec(open('freecad/run_
 
 In the FreeCAD GUI: Macro → Macros... → select a script → Execute.
 
+## Assembly Tree
+
+```
+Enzo_FPV_v2
+├── 01_Body              Body_Shell, Exhaust_Tips
+├── 02_Glass_And_Lights  Windshield_Glass, Side_Glass_L/R, Headlight_Lens_L/R,
+│                        Headlight_Bucket_L/R (black reflector + 5mm LED bores)
+├── 03_Chassis           Chassis (flat plate, pillars, motor tunnels, cradles)
+├── 04_Steering          Knuckle_L/R, Tie_Rod (Ackermann)
+├── 05_Wheels_34mm       Tyre + Hub ×4 (reference; buy the real wheels)
+├── 06_Drivetrain_Ref    N20_Motor_L/R, Servo_SG92R_Ref, Servo_Horn_Ref
+├── 07_Electronics_Ref   Battery_2S18650_Ref, Electronics_Deck, Carrier_PCB_46x32,
+│                        ESP32CAM_Board_Ref, MH_M18_Ref, JQ6500_Ref, OV2640_Camera_Ref
+└── 08_Audio             Speaker_Box_36mm, Speaker_36mm_Ref
+```
+
 ## Print Settings by Part
 
 | Part | Material | Walls | Infill | Notes |
 |------|----------|-------|--------|-------|
-| Main body shell | Red PETG | 3 | 20% gyroid | Print upside-down on roof |
-| Glass / lens inserts | Clear PETG 1.0–1.2 mm sheet or print | 3 | 100% | Cut to fit recessed seats |
-| Chassis, gearbox, decks | PETG | 4 | 40% gyroid | Structural |
-| Speaker enclosure | PETG | 3 | 25% | Sealed — check layer airtightness |
-| TPU gasket / tires | 95A TPU | 3 | 15% gyroid | |
-| Rims | PETG | 4 | 40% gyroid | Hub down on bed |
-
-## Assembly Tree
-
-```
-Ferrari_Enzo_Fixed_Assembly
-├── 01_Exterior_Body        Main_Body_Shell_Enzo, Rear_Diffuser_And_Exhaust
-├── 02_Glass_And_Lights     Flush windshield glass (camera aperture), tumbled side
-│                           glass L/R, angled headlight buckets + clear lenses L/R
-├── 03_Chassis_And_Steering Main_Chassis_Base, Rear_Gearbox_Upper_Cap
-├── 04_Market_Wheels_34mm   4× hub + 4× rubber tire reference parts (buy
-│                           "34mm N20 Smart Car Robot Wheel, 3mm D-shaft")
-├── 05_Audio_System         Sealed_Speaker_Enclosure_36mm
-└── 06_Electronics_Deck     Low_Profile_PCB_Deck (Z = 22 mm), Carrier_PCB_Top_Mounted_Ref
-```
-
-Key corrections over previous iterations:
-
-- **PCB mounts ON TOP of the deck** (Z = 25.5 mm via 3.5 mm standoffs) —
-  the space underneath is fully occupied by the 2S 18650 battery; the
-  ESP32-CAM lens lands at Z ≈ 33 mm aimed through the windshield aperture
-- **Flush sloped glass** — windshield lofted along the 22° canopy rake,
-  side windows follow the 26° tumblehome, no flat boxes poking out
-- **Angled headlight buckets** — black reflector housings recessed into the
-  19.8° sloped front fenders with straight-ahead 5 mm LED bores and flush
-  clear lenses; don't 3D-print glass — cut 0.5 mm clear PETG sheet to the
-  exported STL outlines
-- **Off-the-shelf 34 × 15 mm N20 rubber wheels** (3 mm D-shaft hub) — no
-  TPU tire printing; wheel arches sized for full steering-lock clearance
-
-Every solid is refined with `removeSplitter()` and validated with
-`isValid()` — run Part → Check Geometry (BOPCheck) to confirm before printing.
+| Body shell | Red PETG | 3 | 20% gyroid | Print upside-down on roof |
+| Chassis | PETG | 4 | 40% gyroid | Structural |
+| Steering knuckles | PETG | 4 | 40% gyroid | M2 kingpins |
+| Speaker box | PETG | 3 | 25% | Sealed — check layer airtightness |
+| Glass / lenses | 0.5 mm clear PETG sheet | — | — | Cut to STL outlines, glue with B-7000; do NOT print |
+| Wheels | Buy: "34mm N20 Smart Car Robot Wheel (3mm D-shaft)" | — | — | No rubber printing |
