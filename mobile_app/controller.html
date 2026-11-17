@@ -9,24 +9,31 @@
   html, body { margin: 0; padding: 0; height: 100%; background: #0b0c10; color: #e0e0e0;
                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                touch-action: none; overflow: hidden; }
-  .status { position: absolute; top: 6px; left: 6px; right: 6px; z-index: 40;
-            display: flex; justify-content: space-between; font-size: 12px; pointer-events: none; }
+
+  /* ---------- Top Status Bar ---------- */
+  .status { position: absolute; top: 6px; left: 6px; right: 6px; z-index: 50;
+            display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; pointer-events: none; }
+  .stat-item { display: flex; align-items: center; gap: 4px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; display: inline-block; }
   .dot.on { background: #0f0; box-shadow: 0 0 6px #0f0; }
+  .dot.warn { background: #ff0; box-shadow: 0 0 6px #ff0; }
+  .dot.err { background: #f00; box-shadow: 0 0 6px #f00; }
 
-  /* Video + Controls Layout */
+  /* ---------- Layout ---------- */
   .app { display: flex; flex-direction: column; height: 100%; position: relative; }
   .video-wrap { position: relative; flex: 1; background: #000; display: flex;
                 align-items: center; justify-content: center; overflow: hidden; }
   .video-wrap img { display: block; max-width: 100%; max-height: 100%; }
-  .video-wrap .offline { position: absolute; color: #888; font-size: 14px; }
+  .video-wrap .offline { position: absolute; color: #888; font-size: 14px;
+                         background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 6px; }
 
-  .controls { display: grid; grid-template-columns: 1fr 1fr; height: 40vh; gap: 0; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; height: 42vh; gap: 0; }
   .panel { display: flex; flex-direction: column; align-items: center; justify-content: center;
            padding: 8px; border: 1px solid #222; }
   .panel.left { border-right: none; }
   .panel.right { border-left: none; }
 
+  /* ---------- Joystick ---------- */
   .joy { position: relative; width: 150px; height: 150px; border-radius: 50%;
          background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12);
          touch-action: none; }
@@ -36,15 +43,15 @@
   .joy .deadzone { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
                    width: 30px; height: 30px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.25); }
 
-  .label { margin-top: 8px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+  .label { margin-top: 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
            color: #888; }
   .value { font-size: 11px; font-family: monospace; color: #aaa; margin-top: 2px; }
 
-  /* Buttons Row */
-  .btnrow { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #12141b;
+  /* ---------- Buttons ---------- */
+  .btnrow { display: flex; justify-content: center; gap: 8px; padding: 8px; background: #12141b;
             border-top: 1px solid #222; z-index: 30; }
-  button { flex: 1; padding: 10px 6px; border: none; border-radius: 10px; background: #1f222d;
-           color: #e0e0e0; font-size: 13px; font-weight: 700; cursor: pointer;
+  button { flex: 1; padding: 9px 6px; border: none; border-radius: 10px; background: #1f222d;
+           color: #e0e0e0; font-size: 12px; font-weight: 700; cursor: pointer;
            border: 1px solid #333; touch-action: manipulation; }
   button:active { background: #2a2e3c; }
   button.primary { background: #0e6363; border-color: #149187; color: #fff; }
@@ -52,12 +59,37 @@
   button.danger { background: #6b1a1a; border-color: #9a2a2a; color: #ffc0c0; }
   button.danger:active { background: #9a2a2a; }
   button.active { background: #0f0; color: #000; border-color: #0f0; box-shadow: 0 0 10px #0f0; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Sliders */
-  .slider-row { display: flex; align-items: center; gap: 10px; padding: 6px; background: #12141b;
+  /* ---------- Sliders ---------- */
+  .slider-row { display: flex; align-items: center; gap: 8px; padding: 6px; background: #12141b;
                 border-top: 1px solid #222; }
-  .slider-row label { font-size: 11px; color: #888; width: 52px; }
+  .slider-row label { font-size: 11px; color: #888; width: 56px; }
   input[type=range] { flex: 1; accent-color: #0f0; }
+  .slider-row span { font-size: 11px; font-family: monospace; color: #aaa; min-width: 24px; }
+
+  /* ---------- Telemetry Panel (collapsible) ---------- */
+  .telemetry { position: absolute; bottom: 0; left: 0; right: 0; background: #12141b;
+               border-top: 1px solid #222; padding: 8px; z-index: 40;
+               display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+               gap: 8px; font-size: 11px; max-height: 70px; overflow: hidden; }
+  .tel-item { display: flex; flex-direction: column; gap: 2px; }
+  .tel-item .tel-label { color: #666; font-size: 9px; text-transform: uppercase; }
+  .tel-item .tel-value { font-family: monospace; font-weight: 700; color: #0f0; }
+  .tel-item .tel-value.warn { color: #ff0; }
+  .tel-item .tel-value.err { color: #f00; }
+
+  /* ---------- Reconnection Overlay ---------- */
+  .reconnect-overlay { position: absolute; inset: 0; background: rgba(11,12,16,0.85);
+                       z-index: 100; display: none; flex-direction: column;
+                       align-items: center; justify-content: center; text-align: center; }
+  .reconnect-overlay.show { display: flex; }
+  .reconnect-overlay .spinner { width: 40px; height: 40px; border: 3px solid #222;
+                                border-top: 3px solid #0f0; border-radius: 50%;
+                                animation: spin 1s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .reconnect-overlay h2 { margin: 0 0 8px 0; font-size: 16px; color: #fff; }
+  .reconnect-overlay p { color: #888; font-size: 13px; margin: 0; }
 
   .hint { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center;
           font-size: 11px; color: #555; pointer-events: none; z-index: 20; }
@@ -66,8 +98,10 @@
 <body>
 
 <div class="status">
-  <span id="connStat"><span class="dot" id="connDot"></span> DISCONNECTED</span>
-  <span id="fpsStat">-- fps</span>
+  <div class="stat-item"><span class="dot" id="connDot"></span><span id="connText">DISCONNECTED</span></div>
+  <div class="stat-item"><span class="dot" id="batDot"></span><span id="batText">-- V</span></div>
+  <div class="stat-item"><span id="rssiText">-- dBm</span></div>
+  <div class="stat-item"><span id="uptimeText">--s</span></div>
 </div>
 
 <div class="app">
@@ -111,49 +145,112 @@
     <button id="btnEngine" style="flex:none;padding:6px 10px;font-size:11px;">ENGINE</button>
   </div>
 
-  <div class="hint">Connect to Wi-Fi "RC_FPV_CAR" &rarr; open this page &radr; stream auto-starts</div>
+  <div class="telemetry" id="telemetry">
+    <div class="tel-item"><span class="tel-label">Battery</span><span class="tel-value" id="telBat">-- V</span></div>
+    <div class="tel-item"><span class="tel-label">Signal</span><span class="tel-value" id="telRssi">-- dBm</span></div>
+    <div class="tel-item"><span class="tel-label">Uptime</span><span class="tel-value" id="telUptime">-- s</span></div>
+    <div class="tel-item"><span class="tel-label">Failsafe</span><span class="tel-value" id="telFailsafe">-- ms</span></div>
+    <div class="tel-item"><span class="tel-label">Volume</span><span class="tel-value" id="telVol">--</span></div>
+  </div>
+
+  <div class="reconnect-overlay" id="reconnectOverlay">
+    <div class="spinner"></div>
+    <h2 id="reconnectTitle">Reconnecting…</h2>
+    <p id="reconnectMsg">Attempt <span id="reconnectAttempt">0</span></p>
+  </div>
+
+  <div class="hint">Connect to Wi-Fi "RC_FPV_CAR" &rarr; open this page &rarr; stream auto-starts</div>
 </div>
 
 <script>
 const WS_URL = 'ws://' + window.location.hostname + ':81/ws';
 const VIDEO_URL = 'http://' + window.location.hostname + ':81/stream';
 
+// ---- DOM refs ----
+const connDot = document.getElementById('connDot');
+const connText = document.getElementById('connText');
+const batDot = document.getElementById('batDot');
+const batText = document.getElementById('batText');
+const rssiText = document.getElementById('rssiText');
+const uptimeText = document.getElementById('uptimeText');
+const fpvImg = document.getElementById('fpv');
+const vidOffline = document.getElementById('vidOffline');
+const reconnectOverlay = document.getElementById('reconnectOverlay');
+const reconnectTitle = document.getElementById('reconnectTitle');
+const reconnectMsg = document.getElementById('reconnectMsg');
+const reconnectAttempt = document.getElementById('reconnectAttempt');
+
 // ---- State ----
 let ws = null;
 let reconnectTimer = null;
+let reconnectCount = 0;
+let reconnecting = false;
 let hornPressed = false;
 let lightsOn = false;
 let volume = 22;
 let lastSend = 0;
-let connDot = document.getElementById('connDot');
-let connStat = document.getElementById('connStat');
-let fpsStat = document.getElementById('fpsStat');
-let fpvImg = document.getElementById('fpv');
-let vidOffline = document.getElementById('vidOffline');
+let batteryVoltage = 0;
+let batteryLow = false;
+let lastRssi = 0;
+let uptimeMs = 0;
+let failsafeMs = 250;
 
-let frames = 0, fpsLast = performance.now();
+// ---- Connection helpers ----
+function setConnected(connected) {
+  if (connected) {
+    connDot.className = 'dot on';
+    connText.textContent = 'CONNECTED';
+    connText.style.color = '#0f0';
+    reconnecting = false;
+    reconnectCount = 0;
+    reconnectOverlay.classList.remove('show');
+    clearTimeout(reconnectTimer);
+  } else {
+    connDot.className = 'dot err';
+    connText.textContent = 'DISCONNECTED';
+    connText.style.color = '#f00';
+  }
+}
+
+function setBattery(volts, low) {
+  batteryVoltage = volts;
+  batteryLow = low;
+  batText.textContent = (volts > 0 ? volts.toFixed(2) : '--') + ' V';
+  batDot.className = 'dot' + (low ? ' err' : (volts > 0 ? ' on' : ''));
+  if (low) batText.style.color = '#f00';
+  else if (volts > 0) batText.style.color = '#0f0';
+  else batText.style.color = '#888';
+}
 
 // ---- WebSocket ----
 function connect() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  reconnecting = true;
+  reconnectOverlay.classList.add('show');
+  reconnectTitle.textContent = 'Connecting…';
+  reconnectMsg.textContent = 'Establishing control link';
+
   ws = new WebSocket(WS_URL);
   ws.binaryType = 'arraybuffer';
   ws.onopen = () => {
-    connDot.className = 'dot on';
-    connStat.textContent = 'CONNECTED';
-    clearTimeout(reconnectTimer);
+    setConnected(true);
     sendPacket({ V: volume });
+    sendPacket({ C: 'get' }); // request initial telemetry
   };
   ws.onclose = () => {
-    connDot.className = 'dot';
-    connStat.textContent = 'DISCONNECTED';
-    reconnectTimer = setTimeout(connect, 1000);
+    setConnected(false);
+    if (!reconnecting) return;
+    reconnectCount++;
+    reconnectAttempt.textContent = reconnectCount;
+    const backoff = Math.min(1000 * Math.pow(1.5, reconnectCount - 1), 10000);
+    reconnectMsg.textContent = `Retrying in ${(backoff/1000).toFixed(0)}s…`;
+    reconnectTimer = setTimeout(connect, backoff);
   };
   ws.onerror = () => { ws.close(); };
 }
 connect();
 
-// ---- Send packet (JSON) ----
+// ---- Send packet ----
 function sendPacket(obj) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify(obj));
@@ -162,7 +259,7 @@ function sendPacket(obj) {
 let lastT = 0, lastS = 0, lastH = -1, lastL = -1;
 function pushDrive() {
   const now = performance.now();
-  if (now - lastSend < 50) return;   // 20 Hz max
+  if (now - lastSend < 50) return; // 20 Hz max
   lastSend = now;
   sendPacket({ T: lastT, S: lastS });
 }
@@ -185,12 +282,45 @@ function updateBtnState() {
     'Horn: ' + (hornPressed ? 1 : 0) + '  Lights: ' + (lightsOn ? 1 : 0);
 }
 
+// ---- Telemetry update from WS ----
+function applyTelemetry(d) {
+  if (d.V !== undefined) setBattery(d.V, d.LOW === true);
+  if (d.RSSI !== undefined) {
+    lastRssi = d.RSSI;
+    rssiText.textContent = d.RSSI + ' dBm';
+    document.getElementById('telRssi').textContent = d.RSSI + ' dBm';
+  }
+  if (d.UPTIME !== undefined) {
+    uptimeMs = d.UPTIME;
+    document.getElementById('telUptime').textContent = (d.UPTIME / 1000).toFixed(1) + ' s';
+    uptimeText.textContent = (d.UPTIME / 1000).toFixed(0) + 's';
+  }
+  if (d.FAILSAFE_MS !== undefined) {
+    failsafeMs = d.FAILSAFE_MS;
+    document.getElementById('telFailsafe').textContent = d.FAILSAFE_MS + ' ms';
+  }
+  if (d.AUDIO_VOL !== undefined) {
+    volume = d.AUDIO_VOL;
+    document.getElementById('telVol').textContent = d.AUDIO_VOL;
+    const vSlider = document.getElementById('vol');
+    const vVal = document.getElementById('volVal');
+    if (parseInt(vSlider.value, 10) !== volume) {
+      vSlider.value = volume;
+      vVal.textContent = volume;
+    }
+  }
+  // Battery display
+  document.getElementById('telBat').textContent = (batteryVoltage > 0 ? batteryVoltage.toFixed(2) : '--') + ' V';
+  const batVal = document.getElementById('telBat');
+  batVal.className = 'tel-value' + (batteryLow ? ' warn' : '');
+}
+
 // ---- Virtual Joystick ----
 const joy = document.getElementById('joy');
 const joyBase = document.getElementById('joyBase');
 const joyVal = document.getElementById('joyVal');
-const JOY_R = 75;   // outer radius px
-const DEAD = 16;    // deadzone radius px
+const JOY_R = 75;
+const DEAD = 16;
 
 let activeTouchId = null;
 let cx = joy.clientWidth / 2, cy = joy.clientHeight / 2;
@@ -211,7 +341,6 @@ function placeBase(x, y) {
   joyBase.style.left = (x - 22) + 'px';
   joyBase.style.top  = (y - 22) + 'px';
 
-  // Normalize: throttle = -Y (forward = up), steer = X
   const ddx = (x - cx) / JOY_R;
   const ddy = (y - cy) / JOY_R;
   const dead = DEAD / JOY_R;
@@ -282,26 +411,39 @@ document.getElementById('vol').addEventListener('input', (e) => {
   sendPacket({ V: volume });
 });
 
+// ---- WS message handler ----
+function handleWSMessage(data) {
+  try {
+    const doc = JSON.parse(data);
+    applyTelemetry(doc);
+  } catch (e) {
+    // ignore non-JSON messages
+  }
+}
+
 // ---- FPV Video Stream ----
 let videoStarted = false;
 function startVideo() {
   if (videoStarted) return;
   videoStarted = true;
   fpvImg.src = VIDEO_URL + '?t=' + Date.now();
-  fpvImg.onload = () => { fpvImg.src = VIDEO_URL + '?t=' + Date.now(); };
+  fpvImg.onload = () => {
+    fpvImg.src = VIDEO_URL + '?t=' + Date.now();
+    vidOffline.style.display = 'none';
+  };
   fpvImg.onerror = () => {
-    vidOffline.textContent = 'Stream offline — retrying...';
+    vidOffline.textContent = 'Stream offline — retrying…';
     setTimeout(startVideo, 1000);
   };
   vidOffline.style.display = 'none';
 }
 
-// FPS counter via image loads
+// FPS counter
+let frames = 0, fpsLast = performance.now();
 fpvImg.addEventListener('load', () => {
   frames++;
   const now = performance.now();
   if (now - fpsLast >= 1000) {
-    fpsStat.textContent = frames + ' fps';
     frames = 0; fpsLast = now;
     fpvImg.src = VIDEO_URL + '?t=' + Date.now();
   }
