@@ -4,6 +4,44 @@
 > All content below is extracted from the PDF and organized as a buildable, version-tracked project.
 > No results — only execution artifacts.
 
+## Gallery
+
+### Design renders — Enzo FPV v2 (primary design, FreeCAD)
+
+| Isometric | Top view |
+|-----------|----------|
+| ![Enzo FPV v2 isometric](docs/images/render_enzo_fpv_v2.png) | ![Enzo FPV v2 top](docs/images/render_enzo_fpv_v2_top.png) |
+
+### Design renders — Ferrari Enzo low-profile assembly (alternative design, FreeCAD)
+
+| Isometric | Top view |
+|-----------|----------|
+| ![Ferrari Enzo fixed isometric](docs/images/render_ferrari_enzo_fixed.png) | ![Ferrari Enzo fixed top](docs/images/render_ferrari_enzo_fixed_top.png) |
+
+### KiCad 46 × 32 mm carrier PCB — 3D render
+
+| Top (component side) | Bottom (copper side) |
+|----------------------|----------------------|
+| ![KiCad PCB top render](docs/images/kicad_render_top.png) | ![KiCad PCB bottom render](docs/images/kicad_render_bottom.png) |
+
+### Workspace screenshots (FreeCAD + KiCad GUI)
+
+| Print plate (15 parts flat) | v2 assembly in GUI |
+|-----------------------------|--------------------|
+| ![Print plate parts](docs/images/print_plate_parts.png) | ![Enzo FPV v2 assembly](docs/images/enzo_fpv_v2_assembly.png) |
+
+| KiCad 3D viewer — component side | KiCad 3D viewer — copper side |
+|----------------------------------|-------------------------------|
+| ![KiCad PCB top](docs/images/kicad_pcb_top.png) | ![KiCad PCB bottom](docs/images/kicad_pcb_bottom.png) |
+
+Shell render of the alternative design:
+
+![Enzo shell render](docs/images/enzo_shell_render.png)
+
+> All design renders are auto-generated: FreeCAD views via
+> `freecad/render_images.py` (GUI `saveImage`), KiCad 3D views via
+> `kicad-cli pcb render`.
+
 ## What This Is
 
 A complete, production-ready RC car platform built around a single **AI-Thinker ESP32-CAM** module:
@@ -31,13 +69,16 @@ supercar/
 │   ├── PCB_GUIDE.md               # KiCad carrier PCB (46×32 mm) guide
 │   ├── FREECAD_GUIDE.md           # Mechanical: gearboxes, chassis, shell, wheels
 │   ├── FIRMWARE_GUIDE.md          # Arduino firmware architecture
-│   └── MOBILE_APP.md              # HTML5/JS controller web app
+│   ├── MOBILE_APP.md              # HTML5/JS controller web app
+│   └── images/                    # Screenshots: FreeCAD renders + PCB 3D views
 ├── firmware/
 │   └── FPV_Car_DFPlayer_AutoResume.ino
 ├── freecad/
-│   ├── Enzo_FPV_v2.py  # Fixed Enzo: flush glass, sloped headlights, market wheels (6 App::Part modules)
+│   ├── Enzo_FPV_v2.py                    # v2 ground-up rebuild: 1:22.4 scale, dual N20, 8 modules (primary)
+│   ├── Ferrari_Enzo_Fixed_Assembly.py    # Alternative: flush glass, sloped headlights, market wheels (6 modules)
 │   ├── FPV_RC_Direct_Print_Plate.py      # Master print plate (15 parts flat at Z=0)
-│   └── run_headless.py                   # Headless batch runner → output/*.FCStd + *.stl
+│   ├── run_gui.py                        # GUI-mode batch runner → output/*.FCStd + *.stl
+│   └── run_headless.py                   # Console-only batch runner
 ├── kicad/
 │   └── generate_rc_pcb.py         # 1:1 printable KiCad PCB generator
 ├── mobile_app/

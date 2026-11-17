@@ -9,7 +9,8 @@ active build.
 
 | File | Generates | Purpose |
 |------|-----------|---------|
-| `Enzo_FPV_v2.py` | 34 parts in 8 `App::Part` modules | Ground-up rebuild v2: body shell, flush glass + angled headlights, chassis, Ackermann steering, 34 mm market wheels, dual N20 drivetrain, electronics + audio references — with a built-in interference checker |
+| `Enzo_FPV_v2.py` | 34 parts in 8 `App::Part` modules | Ground-up rebuild v2 (**primary design**): body shell, flush glass + angled headlights, chassis, Ackermann steering, 34 mm market wheels, dual N20 drivetrain, electronics + audio references — with a built-in interference checker |
+| `Ferrari_Enzo_Fixed_Assembly.py` | 22 parts in 6 `App::Part` modules | Alternative design (169 mm low-profile Enzo): flush sloped glass, angled headlight buckets, top-mounted PCB deck, 34 mm market wheels |
 | `FPV_RC_Direct_Print_Plate.py` | 15 parts flat at Z=0 | Master print plate: chassis, gearbox cap, decks, knuckles, tie-rod, pushrod, rims, TPU tires (earlier printed-wheel set; market wheels are now the default) |
 | `run_gui.py` | — | GUI-mode batch runner (xvfb): produces GUI-openable `.FCStd` + STLs in one pass |
 | `run_headless.py` | — | Console-only batch runner (FreeCADCmd); faster, but its `.FCStd` can show an empty tree in the GUI |

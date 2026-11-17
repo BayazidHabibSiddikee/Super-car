@@ -68,6 +68,7 @@ def run_macro(macro_name, doc_name, output_prefix):
 macros = [
     ("freecad/FPV_RC_Direct_Print_Plate.py", "FPV_RC_Direct_Print_Plate", "print_plate"),
     ("freecad/Enzo_FPV_v2.py", "Enzo_FPV_v2", "enzo_fpv_v2"),
+    ("freecad/Ferrari_Enzo_Fixed_Assembly.py", "Ferrari_Enzo_Fixed_Assembly", "ferrari_enzo_fixed"),
 ]
 
 print("=" * 60)
