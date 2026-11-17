@@ -49,14 +49,17 @@ def run_macro(macro_name, doc_name, output_prefix):
     doc.saveAs(fcstd_path)
     print(f"Saved: {fcstd_path}")
     
-    # Export each object as STL
+    # Export each solid object as STL (skip App::Part containers & Origin datum planes/axes)
     stl_count = 0
     for obj in doc.Objects:
-        if hasattr(obj, "Shape") and obj.Shape is not None:
-            stl_path = os.path.join(OUTPUT_DIR, f"{output_prefix}_{obj.Name}.stl")
-            Mesh.export([obj], stl_path)
-            print(f"  Exported: {stl_path}")
-            stl_count += 1
+        if obj.TypeId != "Part::Feature":
+            continue
+        if not hasattr(obj, "Shape") or obj.Shape is None or obj.Shape.isNull():
+            continue
+        stl_path = os.path.join(OUTPUT_DIR, f"{output_prefix}_{obj.Name}.stl")
+        Mesh.export([obj], stl_path)
+        print(f"  Exported: {stl_path}")
+        stl_count += 1
     
     # Close the document
     App.closeDocument(doc_name)
@@ -72,6 +75,7 @@ macros = [
     ("freecad/Jeep_And_Ferrari_Shells.py", "Jeep_And_Ferrari_RC_Shells", "shells_jeep_ferrari"),
     ("freecad/Ferrari_F40_Upgraded_Shell.py", "Ferrari_F40_Upgraded_Shell", "ferrari_upgraded"),
     ("freecad/Ferrari_Enzo_Low_Profile.py", "Ferrari_Enzo_Low_Profile_RC", "ferrari_enzo"),
+    ("freecad/Ferrari_Enzo_Modular_Assembly.py", "Ferrari_Enzo_Modular_Assembly", "ferrari_enzo_modular"),
 ]
 
 print("=" * 60)
