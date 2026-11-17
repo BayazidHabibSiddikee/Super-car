@@ -15,6 +15,12 @@ removed — this directory now contains only the active build.
 Generated artifacts live in `output/` (gitignored): 2 `.FCStd` documents
 plus per-part `.stl` exports.
 
+> **Important:** `output/*.FCStd` files are saved in **GUI mode** (via
+> `run_gui.py`) so they embed `GuiDocument.xml` and open with full tree +
+> colors in the FreeCAD GUI. `run_headless.py` (FreeCADCmd) is faster but
+> produces console-saved files that can show an empty tree in the GUI —
+> use it only when you will re-save or post-process headlessly.
+
 ## Vehicle Specifications
 
 | Parameter | Value |
@@ -29,10 +35,17 @@ plus per-part `.stl` exports.
 
 ## How to Run
 
-Headless batch (regenerates all `.FCStd` + `.stl`):
+GUI-compatible batch (regenerates `.FCStd` + colors + view data that open
+correctly in the FreeCAD GUI):
 
 ```bash
 cd <project root>
+xvfb-run -a flatpak run org.freecad.FreeCAD freecad/run_gui.py
+```
+
+Console-only batch (faster, but GUI may show an empty tree):
+
+```bash
 flatpak run --command=FreeCADCmd org.freecad.FreeCAD -c "exec(open('freecad/run_headless.py').read())"
 ```
 
