@@ -39,3 +39,7 @@ build/
 
 # Logs
 *.log
+# Python
+__pycache__/
+*.pyc
+*.pyo
