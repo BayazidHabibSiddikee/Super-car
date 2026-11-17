@@ -71,6 +71,7 @@ macros = [
     ("freecad/FPV_RC_Direct_Print_Plate.py", "FPV_RC_Direct_Print_Plate", "print_plate"),
     ("freecad/Jeep_And_Ferrari_Shells.py", "Jeep_And_Ferrari_RC_Shells", "shells_jeep_ferrari"),
     ("freecad/Ferrari_F40_Upgraded_Shell.py", "Ferrari_F40_Upgraded_Shell", "ferrari_upgraded"),
+    ("freecad/Ferrari_Enzo_Low_Profile.py", "Ferrari_Enzo_Low_Profile_RC", "ferrari_enzo"),
 ]
 
 print("=" * 60)
