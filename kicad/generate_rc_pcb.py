@@ -46,8 +46,8 @@ def mounting_hole(x, y):
 
 
 def silk_text(text, x, y, layer="F.SilkS", size=0.8):
-    return f' (fp_text user "{text}" (at {x:.3f} {y:.3f}) (layer "{layer}") '\
-           f'(effects (font (size {size:.2f} {size:.2f}) (thickness 0.15))))'
+    return f' (gr_text "{text}" (at {x:.3f} {y:.3f}) (layer "{layer}") '\
+           f'(effects (font (size {size:.2f} {size:.2f}) (thickness 0.15)) (justify left)))'
 
 
 def silk_line(x1, y1, x2, y2, layer="F.SilkS"):
@@ -218,7 +218,9 @@ test_points = [
     ("TP_SERVO",26.0, 15.0, 7, "SERVO_PWM"),
 ]
 for name, x, y, nid, nname in test_points:
-    lines.append(pad_th(name, x, y, 0.8, 1.4, nid, nname))
+    lines.append(f' (footprint "TestPoint" (layer "F.Cu") (at {x:.3f} {y:.3f})')
+    lines.append(pad_th(name, 0, 0, 0.8, 1.4, nid, nname))
+    lines.append(' )')
     lines.append(silk_text(name, x + 1.5, y - 1.0))
 
 # =====================================================================
@@ -261,7 +263,7 @@ lines.append(track(27.43, 20.54, 7.11, 4.54, 0.7, "F.Cu", 9))    # JQ_RX jumper
 # =====================================================================
 # Filled zone polygon covering most of bottom layer, avoiding antenna keepout
 # Zone outline: board outline minus antenna keepout area
-lines.append(' (zone (net 1) (net_name "GND") (layer "B.Cu") (t_connect 0)')
+lines.append(' (zone (net 1) (layer "B.Cu")')
 lines.append('  (polygon')
 lines.append('    (pts')
 # Outer rectangle (board outline)
@@ -281,22 +283,7 @@ lines.append('  )')
 lines.append(' )')
 
 # =====================================================================
-# 11. Antenna Keepout (Rule Area on both copper layers)
-# =====================================================================
-lines.append(' (rule_area')
-lines.append('  (layer "F.Cu")')
-lines.append('  (layer "B.Cu")')
-lines.append(f'  (polygon (pts')
-lines.append(f'    (xy 4.000 36.000)')
-lines.append(f'    (xy 28.000 36.000)')
-lines.append(f'    (xy 28.000 {H:.3f})')
-lines.append(f'    (xy 4.000 {H:.3f})')
-lines.append(f'    (xy 4.000 36.000)')
-lines.append(f'  ))')
-lines.append(' )')
-
-# =====================================================================
-# 12. Close PCB
+# 11. Close PCB
 # =====================================================================
 lines.append(')')
 
