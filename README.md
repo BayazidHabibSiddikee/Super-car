@@ -100,14 +100,4 @@ supercar/
 6. **Audio** — drag `0001.mp3` (horn), `0002.mp3` (engine), `0003.mp3+` (music) onto the JQ6500-16P USB flash; pair phone to MH-M18 as `RC_CAR_AUDIO`.
 7. **Drive** — connect phone to ESP32-CAM SoftAP `RC_FPV_CAR`, open `ws://192.168.4.1/ws` and `http://192.168.4.1:81/stream`.
 
-## Version Tracking
-
-Every change is committed to git. Run:
-
-```bash
-git add -A
-git commit -m "feat: <description>"
-git push
-```
-
 See `docs/BUILD_ROADMAP.md` for the mermaid execution path.
