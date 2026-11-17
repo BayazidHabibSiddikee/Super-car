@@ -6,7 +6,7 @@
 ## Prerequisites
 
 - All 3D-printed parts (PETG/ABS for structural, 95A TPU for tires)
-- Populated PCB (`FPV_RC_Carrier_46x32.kicad_pcb` generated and assembled)
+- Populated PCB (`FPV_RC_Carrier_46x32_v2.kicad_pcb` generated and assembled)
 - ESP32-CAM flashed with `FPV_Car_DFPlayer_AutoResume.ino`
 - All BOM components from `docs/BOM.md`
 

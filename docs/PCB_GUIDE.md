@@ -2,6 +2,8 @@
 
 Source: `super car.pdf` KiCad schematic + layout sections. The carrier board plugs the ESP32-CAM on top and holds all SMD power/driver/audio parts underneath.
 
+> 🌐 **Interactive Guide**: Open [docs/pcb_interactive_guide.html](file:///home/bayazid/Documents/supercar/docs/pcb_interactive_guide.html) in your browser for an interactive 2.5D component placement viewer, mezzanine stacking 3D overlay, and multimeter bring-up simulator!
+
 ## Board Origin & Outline
 
 - Edge.Cuts rectangle: X = 0 → 32.0 mm (width), Y = 0 → 46.0 mm (length)
@@ -50,7 +52,7 @@ Source: `super car.pdf` KiCad schematic + layout sections. The carrier board plu
 
 ## DIY Home-Etch Generation
 
-Run `python3 kicad/generate_rc_pcb.py` to produce `FPV_RC_Carrier_46x32.kicad_pcb`. The script optimizes for single-sided DIY etching:
+Run `python3 kicad/generate_rc_pcb.py` to produce `FPV_RC_Carrier_46x32_v2.kicad_pcb`. The script optimizes for single-sided DIY etching:
 
 - 0.8–1.5 mm traces, 0.5 mm min isolation gaps
 - Bottom copper (B.Cu) main routing + four 0.8 mm top-layer jumpers

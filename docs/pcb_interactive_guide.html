@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPV_RC_Carrier_46x32_v2 — Interactive PCB Assembly & Verification Guide</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f17;
+      color: #e2e8f0;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Interactive SVG PCB styles */
+    .pcb-group {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .pcb-group:hover .highlight-box {
+      stroke: #38bdf8;
+      stroke-width: 0.6;
+      fill: rgba(56, 189, 248, 0.14);
+    }
+    .pcb-group.active .highlight-box {
+      stroke: #facc15;
+      stroke-width: 0.8;
+      fill: rgba(250, 204, 21, 0.22);
+      filter: drop-shadow(0 0 3px rgba(250, 204, 21, 0.7));
+    }
+    .probe-pad {
+      cursor: crosshair;
+      transition: transform 0.15s ease;
+    }
+    .probe-pad:hover {
+      stroke: #ffffff;
+      stroke-width: 0.4;
+    }
+    .module-overlay {
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      pointer-events: none;
+    }
+    @keyframes pulseRing {
+      0% { r: 1.3; opacity: 1; }
+      100% { r: 2.8; opacity: 0; }
+    }
+    .pulse-circle {
+      animation: pulseRing 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold mono">
+          PCB
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg text-white tracking-tight">FPV_RC_Carrier_46x32_v2</h1>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mono">46.0 × 32.0 mm</span>
+          </div>
+          <p class="text-xs text-slate-400">Interactive Component Placement, Mezzanine Stacking & Multimeter Bring-Up Simulator</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <button id="tab-placement" onclick="switchMainTab('placement')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition bg-emerald-500 text-slate-950 shadow">
+          1. Where Everything Goes
+        </button>
+        <button id="tab-multimeter" onclick="switchMainTab('multimeter')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition text-slate-300 hover:text-white">
+          2. Multimeter & Smoke Test
+        </button>
+        <button id="tab-kicad" onclick="switchMainTab('kicad')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition text-slate-300 hover:text-white">
+          3. Why KiCad Says "Unrouted: 20"
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- LEFT/CENTER COLUMN: INTERACTIVE 2.5D PCB VIEWER (7 COLS) -->
+    <section class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col gap-4">
+      
+      <!-- Toolbar above PCB -->
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Board View:</span>
+          <button id="btn-view-top" onclick="setBoardView('top')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            Top (F.Cu Solderside)
+          </button>
+          <button id="btn-view-xray" onclick="setBoardView('xray')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+            Stacked Modules (3D Overlay)
+          </button>
+          <button id="btn-view-bottom" onclick="setBoardView('bottom')" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700">
+            Bottom (B.Cu Tracks)
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+            <input type="checkbox" id="chk-gnd-pour" onchange="toggleGndPour(this.checked)" class="accent-emerald-500 rounded">
+            <span>Simulate Key <kbd class="px-1 py-0.5 bg-slate-800 rounded text-amber-300 mono">B</kbd> (Fill GND Pour)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Orientation Compass Banner -->
+      <div class="grid grid-cols-3 text-center text-[11px] mono bg-slate-950/90 border border-slate-800/80 rounded-xl py-1.5 px-2">
+        <div class="text-amber-400 flex items-center justify-start gap-1">
+          <span>⬅ REAR OF CAR</span>
+          <span class="text-slate-500 hidden sm:inline">(Battery & USB)</span>
+        </div>
+        <div class="text-slate-400 font-semibold">
+          Matches Your Screenshot Orientation
+        </div>
+        <div class="text-sky-400 flex items-center justify-end gap-1">
+          <span class="text-slate-500 hidden sm:inline">(Camera & Servo)</span>
+          <span>FRONT OF CAR ➡</span>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE SVG PCB CANVAS -->
+      <!-- Mapped horizontally: X_svg = Y_kicad (0..46mm), Y_svg = X_kicad (0..32mm) so it matches the user's screenshot 1:1 -->
+      <div class="relative w-full bg-[#1a1d24] rounded-xl border border-slate-800 p-3 sm:p-6 flex items-center justify-center overflow-hidden shadow-inner">
+        
+        <svg id="pcb-svg" viewBox="-3 -3 52 38" class="w-full h-auto max-h-[460px] select-none drop-shadow-[0_12px_25px_rgba(0,0,0,0.65)]">
+          <defs>
+            <!-- Soldermask Green Gradient -->
+            <linearGradient id="pcbGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#193824" />
+              <stop offset="50%" stop-color="#132c1c" />
+              <stop offset="100%" stop-color="#0d2114" />
+            </linearGradient>
+            <!-- Gold ENIG Pad Gradient -->
+            <linearGradient id="goldPad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fde047" />
+              <stop offset="100%" stop-color="#ca8a04" />
+            </linearGradient>
+            <!-- SMD IC Body Gradient -->
+            <linearGradient id="icBody" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e293b" />
+              <stop offset="100%" stop-color="#090d16" />
+            </linearGradient>
+          </defs>
+
+          <!-- PCB SUBSTRATE (46mm wide x 32mm tall in horizontal view) -->
+          <rect x="0" y="0" width="46" height="32" rx="0.8" fill="url(#pcbGreen)" stroke="#94a3b8" stroke-width="0.2" />
+
+          <!-- SIMULATED GND COPPER POUR (Toggled via 'B' checkbox) -->
+          <g id="layer-gnd-pour" opacity="0" class="transition-opacity duration-300">
+            <rect x="0.5" y="0.5" width="45" height="31" rx="0.4" fill="#1e4d2b" stroke="#22c55e" stroke-width="0.15" stroke-dasharray="0.4,0.2" />
+            <text x="23" y="1.7" fill="#4ade80" font-size="1.1" font-family="JetBrains Mono" text-anchor="middle" opacity="0.8">SOLID GND COPPER ZONE FILLED (0 UNROUTED AIRWIRES)</text>
+          </g>
+
+          <!-- BOTTOM COPPER TRACKS (B.Cu - Dark Green/Gold Subsurface Traces) -->
+          <g id="layer-bcu-tracks" opacity="0.45">
+            <path d="M 2.5 11.5 L 7.0 11.5" stroke="#2d6a4f" stroke-width="1.1" stroke-linecap="round" fill="none" />
+            <path d="M 7.0 16.58 L 10.5 16.58 L 12.1 13.3" stroke="#2d6a4f" stroke-width="0.8" stroke-linecap="round" fill="none" />
+            <path d="M 10.5 16.58 L 10.5 22.0 L 20.28 22.0 L 20.28 24.89" stroke="#2d6a4f" stroke-width="0.7" stroke-linecap="round" fill="none" />
+            <path d="M 15.9 18.7 L 5.5 18.7 L 2.5 17.5" stroke="#2d6a4f" stroke-width="1.0" stroke-linecap="round" fill="none" />
+            <path d="M 12.1 18.7 L 2.5 20.0" stroke="#2d6a4f" stroke-width="1.0" stroke-linecap="round" fill="none" />
+            <path d="M 33.16 27.43 L 33.16 13.46 L 43.5 18.54" stroke="#2d6a4f" stroke-width="0.6" stroke-linecap="round" fill="none" />
+            <path d="M 27.0 16.0 L 43.5 16.0" stroke="#2d6a4f" stroke-width="0.8" stroke-linecap="round" fill="none" />
+            <path d="M 35.7 27.43 L 35.7 7.11 L 2.5 7.11" stroke="#2d6a4f" stroke-width="0.45" stroke-linecap="round" fill="none" />
+          </g>
+
+          <!-- TOP COPPER TRACKS (F.Cu) -->
+          <g id="layer-fcu-tracks" opacity="0.65">
+            <path d="M 10.5 16.58 L 21.0 11.5 L 27.0 11.5 L 28.6 14.8" stroke="#65a30d" stroke-width="0.65" stroke-linecap="round" fill="none" />
+            <path d="M 21.0 8.5 L 23.0 9.5 L 23.0 27.43" stroke="#65a30d" stroke-width="0.8" stroke-linecap="round" fill="none" />
+            <path d="M 29.9 14.8 L 29.04 9.0" stroke="#65a30d" stroke-width="0.75" stroke-linecap="round" fill="none" />
+            <path d="M 26.1 14.8 L 26.5 9.0" stroke="#65a30d" stroke-width="0.75" stroke-linecap="round" fill="none" />
+            <path d="M 31.5 18.0 L 34.0 18.0 L 36.5 18.0" stroke="#65a30d" stroke-width="0.5" stroke-linecap="round" fill="none" />
+          </g>
+
+          <!-- 4x M2 CORNER MOUNTING HOLES -->
+          <g fill="#090d16" stroke="#cbd5e1" stroke-width="0.35">
+            <circle cx="2.5" cy="2.5" r="1.1" />
+            <circle cx="2.5" cy="29.5" r="1.1" />
+            <circle cx="43.5" cy="2.5" r="1.1" />
+            <circle cx="43.5" cy="29.5" r="1.1" />
+          </g>
+
+          <!-- ===================================================== -->
+          <!-- CLICKABLE COMPONENT GROUPS (MATCHED TO 3D SCREENSHOT) -->
+          <!-- ===================================================== -->
+
+          <!-- 1. JQ6500-16P MODULE ZONE (LEFT / REAR SIDE) -->
+          <g id="comp-jq6500" class="pcb-group" onclick="selectComponent('jq6500')">
+            <rect class="highlight-box" x="1.5" y="6.0" width="19.8" height="20.0" rx="0.5" fill="transparent" stroke="#f8fafc" stroke-width="0.18" />
+            <text x="10.2" y="16.0" fill="#f8fafc" font-size="1.4" font-family="JetBrains Mono" font-weight="bold" transform="rotate(-90 10.2 16.0)" text-anchor="middle">JQ6500-16P</text>
+            
+            <!-- Top Row (JJQ_R in screenshot: Pin 9..16) -->
+            <g fill="url(#goldPad)">
+              <!-- Pin 9 Square -->
+              <rect x="1.7" y="6.3" width="1.6" height="1.6" rx="0.15" />
+              <circle cx="5.04" cy="7.11" r="0.8" />
+              <circle cx="7.58" cy="7.11" r="0.8" />
+              <circle cx="10.12" cy="7.11" r="0.8" />
+              <circle cx="12.66" cy="7.11" r="0.8" />
+              <circle cx="15.20" cy="7.11" r="0.8" />
+              <circle cx="17.74" cy="7.11" r="0.8" />
+              <circle cx="20.28" cy="7.11" r="0.8" />
+            </g>
+            <!-- Bottom Row (JJQ_L in screenshot: Pin 1..8) -->
+            <g fill="url(#goldPad)">
+              <!-- Pin 1 Square -->
+              <rect x="1.7" y="24.09" width="1.6" height="1.6" rx="0.15" />
+              <circle cx="5.04" cy="24.89" r="0.8" />
+              <circle cx="7.58" cy="24.89" r="0.8" />
+              <circle cx="10.12" cy="24.89" r="0.8" />
+              <circle cx="12.66" cy="24.89" r="0.8" />
+              <circle cx="15.20" cy="24.89" r="0.8" />
+              <circle cx="17.74" cy="24.89" r="0.8" />
+              <circle cx="20.28" cy="24.89" r="0.8" />
+            </g>
+            <!-- Drill holes -->
+            <g fill="#090d16">
+              <circle cx="2.5" cy="7.11" r="0.42" /><circle cx="5.04" cy="7.11" r="0.42" /><circle cx="7.58" cy="7.11" r="0.42" /><circle cx="10.12" cy="7.11" r="0.42" /><circle cx="12.66" cy="7.11" r="0.42" /><circle cx="15.20" cy="7.11" r="0.42" /><circle cx="17.74" cy="7.11" r="0.42" /><circle cx="20.28" cy="7.11" r="0.42" />
+              <circle cx="2.5" cy="24.89" r="0.42" /><circle cx="5.04" cy="24.89" r="0.42" /><circle cx="7.58" cy="24.89" r="0.42" /><circle cx="10.12" cy="24.89" r="0.42" /><circle cx="12.66" cy="24.89" r="0.42" /><circle cx="15.20" cy="24.89" r="0.42" /><circle cx="17.74" cy="24.89" r="0.42" /><circle cx="20.28" cy="24.89" r="0.42" />
+            </g>
+          </g>
+
+          <!-- 2. U2: RZ7889 MOTOR DRIVER (UNDER JQ6500) -->
+          <g id="comp-u2" class="pcb-group" onclick="selectComponent('u2')">
+            <rect class="highlight-box" x="11.2" y="12.2" width="5.6" height="7.6" rx="0.4" fill="url(#icBody)" stroke="#f8fafc" stroke-width="0.2" />
+            <circle cx="12.2" cy="18.8" r="0.35" fill="#38bdf8" />
+            <text x="12.5" y="14.2" fill="#cbd5e1" font-size="1.15" font-family="JetBrains Mono" transform="rotate(-90 12.5 14.2)">U2</text>
+            <!-- SOIC-8 Pads -->
+            <g fill="#cbd5e1">
+              <rect x="11.8" y="18.2" width="0.65" height="1.3" /><rect x="13.07" y="18.2" width="0.65" height="1.3" /><rect x="14.34" y="18.2" width="0.65" height="1.3" /><rect x="15.61" y="18.2" width="0.65" height="1.3" />
+              <rect x="11.8" y="12.5" width="0.65" height="1.3" /><rect x="13.07" y="12.5" width="0.65" height="1.3" /><rect x="14.34" y="12.5" width="0.65" height="1.3" /><rect x="15.61" y="12.5" width="0.65" height="1.3" />
+            </g>
+          </g>
+
+          <!-- 3. JBUCK: MP1584EN 5V BUCK HEADER (UNDER JQ6500) -->
+          <g id="comp-jbuck" class="pcb-group" onclick="selectComponent('jbuck')">
+            <rect class="highlight-box" x="5.6" y="14.2" width="2.8" height="7.6" rx="0.3" fill="rgba(15,23,42,0.5)" stroke="#94a3b8" stroke-width="0.15" />
+            <text x="5.0" y="18.0" fill="#f8fafc" font-size="1.1" font-family="JetBrains Mono" transform="rotate(-90 5.0 18.0)" text-anchor="middle">JBUCK</text>
+            <rect x="6.2" y="19.7" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="7.0" cy="17.96" r="0.8" fill="url(#goldPad)" />
+            <circle cx="7.0" cy="15.42" r="0.8" fill="url(#goldPad)" />
+            <circle cx="7.0" cy="20.5" r="0.42" fill="#090d16" />
+            <circle cx="7.0" cy="17.96" r="0.42" fill="#090d16" />
+            <circle cx="7.0" cy="15.42" r="0.42" fill="#090d16" />
+          </g>
+
+          <!-- 4. D2: 1N5819 SCHOTTKY ISOLATION DIODE -->
+          <g id="comp-d2" class="pcb-group" onclick="selectComponent('d2')">
+            <rect class="highlight-box" x="18.2" y="19.5" width="2.6" height="5.0" rx="0.3" fill="url(#icBody)" stroke="#f8fafc" stroke-width="0.18" />
+            <line x1="18.4" y1="23.2" x2="20.6" y2="23.2" stroke="#38bdf8" stroke-width="0.35" />
+            <text x="17.6" y="22.2" fill="#f8fafc" font-size="1.05" font-family="JetBrains Mono" transform="rotate(-90 17.6 22.2)">D2</text>
+            <rect x="18.8" y="19.8" width="1.4" height="1.2" fill="#cbd5e1" />
+            <rect x="18.8" y="23.2" width="1.4" height="1.2" fill="#cbd5e1" />
+          </g>
+
+          <!-- 5. ESP32-CAM MODULE ZONE (RIGHT / FRONT SIDE) -->
+          <g id="comp-esp32" class="pcb-group" onclick="selectComponent('esp32')">
+            <rect class="highlight-box" x="22.0" y="3.4" width="19.8" height="25.2" rx="0.5" fill="transparent" stroke="#f8fafc" stroke-width="0.22" />
+            <text x="24.2" y="16.5" fill="#f8fafc" font-size="1.45" font-family="JetBrains Mono" font-weight="bold" transform="rotate(-90 24.2 16.5)" text-anchor="middle">ESP32-CAM (TOP)</text>
+            
+            <!-- Top Row (JESP_R: Pin 1..8) -->
+            <g fill="url(#goldPad)">
+              <rect x="22.2" y="3.77" width="1.6" height="1.6" rx="0.15" />
+              <circle cx="25.54" cy="4.57" r="0.8" />
+              <circle cx="28.08" cy="4.57" r="0.8" />
+              <circle cx="30.62" cy="4.57" r="0.8" />
+              <circle cx="33.16" cy="4.57" r="0.8" />
+              <circle cx="35.70" cy="4.57" r="0.8" />
+              <circle cx="38.24" cy="4.57" r="0.8" />
+              <circle cx="40.78" cy="4.57" r="0.8" />
+            </g>
+            <!-- Bottom Row (JESP_L: Pin 1..8) -->
+            <g fill="url(#goldPad)">
+              <rect x="22.2" y="26.63" width="1.6" height="1.6" rx="0.15" />
+              <circle cx="25.54" cy="27.43" r="0.8" />
+              <circle cx="28.08" cy="27.43" r="0.8" />
+              <circle cx="30.62" cy="27.43" r="0.8" />
+              <circle cx="33.16" cy="27.43" r="0.8" />
+              <circle cx="35.70" cy="27.43" r="0.8" />
+              <circle cx="38.24" cy="27.43" r="0.8" />
+              <circle cx="40.78" cy="27.43" r="0.8" />
+            </g>
+            <g fill="#090d16">
+              <circle cx="23.0" cy="4.57" r="0.42" /><circle cx="25.54" cy="4.57" r="0.42" /><circle cx="28.08" cy="4.57" r="0.42" /><circle cx="30.62" cy="4.57" r="0.42" /><circle cx="33.16" cy="4.57" r="0.42" /><circle cx="35.70" cy="4.57" r="0.42" /><circle cx="38.24" cy="4.57" r="0.42" /><circle cx="40.78" cy="4.57" r="0.42" />
+              <circle cx="23.0" cy="27.43" r="0.42" /><circle cx="25.54" cy="27.43" r="0.42" /><circle cx="28.08" cy="27.43" r="0.42" /><circle cx="30.62" cy="27.43" r="0.42" /><circle cx="33.16" cy="27.43" r="0.42" /><circle cx="35.70" cy="27.43" r="0.42" /><circle cx="38.24" cy="27.43" r="0.42" /><circle cx="40.78" cy="27.43" r="0.42" />
+            </g>
+          </g>
+
+          <!-- 6. U3: HXJ8002 3W AUDIO AMPLIFIER (UNDER ESP32-CAM) -->
+          <g id="comp-u3" class="pcb-group" onclick="selectComponent('u3')">
+            <rect class="highlight-box" x="26.2" y="11.2" width="5.6" height="7.6" rx="0.4" fill="url(#icBody)" stroke="#f8fafc" stroke-width="0.2" />
+            <circle cx="27.2" cy="17.8" r="0.35" fill="#facc15" />
+            <text x="25.6" y="15.0" fill="#cbd5e1" font-size="1.15" font-family="JetBrains Mono" transform="rotate(-90 25.6 15.0)" text-anchor="middle">U3</text>
+            <g fill="#cbd5e1">
+              <rect x="26.8" y="17.2" width="0.65" height="1.3" /><rect x="28.07" y="17.2" width="0.65" height="1.3" /><rect x="29.34" y="17.2" width="0.65" height="1.3" /><rect x="30.61" y="17.2" width="0.65" height="1.3" />
+              <rect x="26.8" y="11.5" width="0.65" height="1.3" /><rect x="28.07" y="11.5" width="0.65" height="1.3" /><rect x="29.34" y="11.5" width="0.65" height="1.3" /><rect x="30.61" y="11.5" width="0.65" height="1.3" />
+            </g>
+          </g>
+
+          <!-- 7. C1: 470uF ANTI-BROWNOUT CAP + J8_BT (MH-M18 BLUETOOTH) + R1..R3 MIXER -->
+          <g id="comp-mixer" class="pcb-group" onclick="selectComponent('mixer')">
+            <rect class="highlight-box" x="24.5" y="18.2" width="13.5" height="7.2" rx="0.4" fill="transparent" stroke="#64748b" stroke-width="0.15" stroke-dasharray="0.4,0.3" />
+            <!-- C1 Pads -->
+            <rect x="24.7" y="23.7" width="1.5" height="1.5" fill="url(#goldPad)" />
+            <circle cx="28.0" cy="24.45" r="0.75" fill="url(#goldPad)" />
+            <circle cx="25.45" cy="24.45" r="0.4" fill="#090d16" />
+            <circle cx="28.0" cy="24.45" r="0.4" fill="#090d16" />
+            <text x="23.5" y="24.8" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 23.5 24.8)">C1</text>
+
+            <!-- J8_BT (4-pin Bluetooth Header) -->
+            <rect x="28.7" y="21.7" width="1.5" height="1.5" fill="url(#goldPad)" />
+            <circle cx="32.0" cy="22.45" r="0.75" fill="url(#goldPad)" />
+            <circle cx="34.54" cy="22.45" r="0.75" fill="url(#goldPad)" />
+            <circle cx="37.08" cy="22.45" r="0.75" fill="url(#goldPad)" />
+            <text x="28.5" y="21.2" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 28.5 21.2)">J8_BT</text>
+
+            <!-- R3, R1, R2 0805 Audio Mixer Resistors -->
+            <rect x="31.0" y="18.6" width="1.2" height="2.2" fill="#cbd5e1" />
+            <rect x="33.5" y="18.6" width="1.2" height="2.2" fill="#cbd5e1" />
+            <rect x="36.0" y="18.6" width="1.2" height="2.2" fill="#cbd5e1" />
+            <text x="31.8" y="18.2" fill="#f8fafc" font-size="0.95" font-family="JetBrains Mono">R3 R1 R2</text>
+          </g>
+
+          <!-- 8. J6_SPK: 3W SPEAKER HEADER (UNDER ESP32-CAM) -->
+          <g id="comp-j6spk" class="pcb-group" onclick="selectComponent('j6spk')">
+            <rect class="highlight-box" x="25.4" y="7.8" width="4.8" height="2.4" rx="0.3" fill="transparent" stroke="#94a3b8" stroke-width="0.15" />
+            <rect x="28.2" y="8.2" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="26.5" cy="9.0" r="0.8" fill="url(#goldPad)" />
+            <circle cx="29.0" cy="9.0" r="0.4" fill="#090d16" />
+            <circle cx="26.5" cy="9.0" r="0.4" fill="#090d16" />
+            <text x="25.2" y="9.2" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 25.2 9.2)" text-anchor="middle">J6_SPK</text>
+          </g>
+
+          <!-- 9. LEFT EDGE CONNECTORS: J1_BAT & J2_MOT -->
+          <g id="comp-j1j2" class="pcb-group" onclick="selectComponent('j1j2')">
+            <rect class="highlight-box" x="1.2" y="10.2" width="2.8" height="12.5" rx="0.4" fill="transparent" stroke="#facc15" stroke-width="0.18" />
+            <!-- J2_MOT -->
+            <rect x="1.7" y="13.7" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="2.5" cy="12.0" r="0.8" fill="url(#goldPad)" />
+            <circle cx="2.5" cy="14.5" r="0.42" fill="#090d16" />
+            <circle cx="2.5" cy="12.0" r="0.42" fill="#090d16" />
+            <text x="1.2" y="13.2" fill="#f8fafc" font-size="1.05" font-family="JetBrains Mono" transform="rotate(-90 1.2 13.2)" text-anchor="middle">J2_MOT</text>
+            <!-- J1_BAT -->
+            <rect x="1.7" y="19.7" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="2.5" cy="18.0" r="0.8" fill="url(#goldPad)" />
+            <circle cx="2.5" cy="20.5" r="0.42" fill="#090d16" />
+            <circle cx="2.5" cy="18.0" r="0.42" fill="#090d16" />
+            <text x="1.2" y="19.5" fill="#f8fafc" font-size="1.05" font-family="JetBrains Mono" transform="rotate(-90 1.2 19.5)" text-anchor="middle">J1_BAT</text>
+          </g>
+
+          <!-- 10. RIGHT EDGE CONNECTORS: J5_TAIL, J3_SRV, J4_LED + Q1/Q2 -->
+          <g id="comp-front-io" class="pcb-group" onclick="selectComponent('front_io')">
+            <rect class="highlight-box" x="37.5" y="6.2" width="7.2" height="19.8" rx="0.4" fill="transparent" stroke="#38bdf8" stroke-width="0.18" />
+            <!-- J5_TAIL -->
+            <circle cx="43.5" cy="7.5" r="0.8" fill="url(#goldPad)" />
+            <rect x="42.7" y="9.2" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="43.5" cy="7.5" r="0.42" fill="#090d16" /><circle cx="43.5" cy="10.0" r="0.42" fill="#090d16" />
+            <text x="42.2" y="8.8" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 42.2 8.8)" text-anchor="middle">J5_TAIL</text>
+
+            <!-- J3_SRV (SG92R Servo) -->
+            <circle cx="43.5" cy="13.46" r="0.8" fill="url(#goldPad)" />
+            <circle cx="43.5" cy="16.00" r="0.8" fill="url(#goldPad)" />
+            <rect x="42.7" y="17.74" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="43.5" cy="13.46" r="0.42" fill="#090d16" /><circle cx="43.5" cy="16.0" r="0.42" fill="#090d16" /><circle cx="43.5" cy="18.54" r="0.42" fill="#090d16" />
+            <text x="42.2" y="16.0" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 42.2 16.0)" text-anchor="middle">J3_SRV</text>
+
+            <!-- J4_LED (Headlights) -->
+            <circle cx="43.5" cy="21.96" r="0.8" fill="url(#goldPad)" />
+            <rect x="42.7" y="23.7" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="43.5" cy="21.96" r="0.42" fill="#090d16" /><circle cx="43.5" cy="24.5" r="0.42" fill="#090d16" />
+            <text x="42.2" y="23.2" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 42.2 23.2)" text-anchor="middle">J4_LED</text>
+
+            <!-- Q1 & Q2 SOT-23 MOSFETs -->
+            <rect x="38.2" y="22.8" width="2.2" height="1.6" fill="url(#icBody)" stroke="#cbd5e1" stroke-width="0.15" />
+            <rect x="38.2" y="12.2" width="2.2" height="1.6" fill="url(#icBody)" stroke="#cbd5e1" stroke-width="0.15" />
+            <text x="39.3" y="25.4" fill="#cbd5e1" font-size="0.9" font-family="JetBrains Mono" text-anchor="middle">Q1</text>
+            <text x="39.3" y="11.6" fill="#cbd5e1" font-size="0.9" font-family="JetBrains Mono" text-anchor="middle">Q2</text>
+          </g>
+
+          <!-- 11. J7_UART: 4-PIN PROGRAMMING HEADER (BOTTOM-LEFT) -->
+          <g id="comp-j7uart" class="pcb-group" onclick="selectComponent('j7uart')">
+            <rect class="highlight-box" x="8.3" y="28.5" width="9.8" height="2.6" rx="0.3" fill="transparent" stroke="#f8fafc" stroke-width="0.15" />
+            <rect x="8.7" y="29.0" width="1.6" height="1.6" fill="url(#goldPad)" />
+            <circle cx="12.04" cy="29.8" r="0.8" fill="url(#goldPad)" />
+            <circle cx="14.58" cy="29.8" r="0.8" fill="url(#goldPad)" />
+            <circle cx="17.12" cy="29.8" r="0.8" fill="url(#goldPad)" />
+            <circle cx="9.5" cy="29.8" r="0.42" fill="#090d16" /><circle cx="12.04" cy="29.8" r="0.42" fill="#090d16" /><circle cx="14.58" cy="29.8" r="0.42" /><circle cx="17.12" cy="29.8" r="0.42" fill="#090d16" />
+            <text x="8.0" y="29.2" fill="#f8fafc" font-size="1.0" font-family="JetBrains Mono" transform="rotate(-90 8.0 29.2)">J7_UART</text>
+          </g>
+
+          <!-- 12. TOP-LEFT TEST POINTS: TP_VBAT .. TP_SERVO -->
+          <g id="comp-testpoints" class="pcb-group" onclick="selectComponent('testpoints')">
+            <rect class="highlight-box" x="4.8" y="1.2" width="15.0" height="2.6" rx="0.3" fill="transparent" stroke="#facc15" stroke-width="0.15" stroke-dasharray="0.3,0.3" />
+            <g fill="url(#goldPad)">
+              <circle cx="6.0" cy="2.5" r="0.7" />
+              <circle cx="8.5" cy="2.5" r="0.7" />
+              <circle cx="11.0" cy="2.5" r="0.7" />
+              <circle cx="13.5" cy="2.5" r="0.7" />
+              <circle cx="16.0" cy="2.5" r="0.7" />
+              <circle cx="18.5" cy="2.5" r="0.7" />
+            </g>
+            <g fill="#090d16">
+              <circle cx="6.0" cy="2.5" r="0.35" /><circle cx="8.5" cy="2.5" r="0.35" /><circle cx="11.0" cy="2.5" r="0.35" /><circle cx="13.5" cy="2.5" r="0.35" /><circle cx="16.0" cy="2.5" r="0.35" /><circle cx="18.5" cy="2.5" r="0.35" />
+            </g>
+            <text x="6.0" y="4.3" fill="#f8fafc" font-size="0.85" font-family="JetBrains Mono" text-anchor="middle">VBAT</text>
+            <text x="8.5" y="4.3" fill="#f8fafc" font-size="0.85" font-family="JetBrains Mono" text-anchor="middle">GND</text>
+            <text x="11.0" y="4.3" fill="#f8fafc" font-size="0.85" font-family="JetBrains Mono" text-anchor="middle">5V</text>
+            <text x="13.5" y="4.3" fill="#f8fafc" font-size="0.85" font-family="JetBrains Mono" text-anchor="middle">FWD</text>
+            <text x="16.0" y="4.3" fill="#f8fafc" font-size="0.85" font-family="JetBrains Mono" text-anchor="middle">REV</text>
+            <text x="18.5" y="4.3" fill="#f8fafc" font-size="0.85" font-family="JetBrains Mono" text-anchor="middle">SRV</text>
+          </g>
+
+          <!-- ===================================================== -->
+          <!-- STACKED 3D MODULE OVERLAYS (SHOWN IN "STACKED" MODE)  -->
+          <!-- ===================================================== -->
+          <g id="layer-stacked-modules" class="module-overlay" opacity="0">
+            <!-- JQ6500-16P Elevated Blue PCB -->
+            <rect x="1.2" y="5.8" width="20.2" height="20.4" rx="0.8" fill="rgba(29, 78, 216, 0.82)" stroke="#60a5fa" stroke-width="0.35" />
+            <!-- Micro-USB Port Overhanging Left/Rear Edge -->
+            <rect x="-1.2" y="13.2" width="3.2" height="5.6" rx="0.3" fill="#94a3b8" stroke="#e2e8f0" stroke-width="0.2" />
+            <text x="0.4" y="16.3" fill="#0f172a" font-size="0.95" font-weight="bold" font-family="JetBrains Mono" text-anchor="middle">USB</text>
+            <text x="11.5" y="15.0" fill="#ffffff" font-size="1.4" font-weight="bold" font-family="JetBrains Mono" text-anchor="middle">JQ6500-16P</text>
+            <text x="11.5" y="17.2" fill="#bfdbfe" font-size="1.0" font-family="Inter" text-anchor="middle">Sits 8.5mm ABOVE U2 &amp; Buck</text>
+
+            <!-- ESP32-CAM Elevated Black PCB + Overhanging Antenna/Lens -->
+            <rect x="21.8" y="2.8" width="27.0" height="26.4" rx="0.8" fill="rgba(15, 23, 42, 0.88)" stroke="#38bdf8" stroke-width="0.35" />
+            <!-- Metal Shield Can -->
+            <rect x="24.5" y="6.5" width="15.0" height="16.0" rx="0.4" fill="#cbd5e1" stroke="#64748b" stroke-width="0.25" opacity="0.9" />
+            <text x="32.0" y="14.2" fill="#0f172a" font-size="1.35" font-weight="bold" font-family="JetBrains Mono" text-anchor="middle">ESP32-S</text>
+            <text x="32.0" y="16.2" fill="#1e293b" font-size="0.95" font-family="Inter" text-anchor="middle">8.5mm ABOVE U3 &amp; Mixer</text>
+            <!-- OV2640 Camera Lens Facing Right/Front -->
+            <rect x="40.5" y="12.0" width="6.5" height="8.0" rx="0.5" fill="#1e293b" stroke="#94a3b8" stroke-width="0.2" />
+            <circle cx="44.2" cy="16.0" r="2.6" fill="#090d16" stroke="#38bdf8" stroke-width="0.3" />
+            <circle cx="44.2" cy="16.0" r="1.1" fill="#1e3a8a" />
+            <text x="44.2" y="21.8" fill="#38bdf8" font-size="1.0" font-family="JetBrains Mono" text-anchor="middle">LENS ➡</text>
+          </g>
+
+        </svg>
+      </div>
+
+      <!-- Legend / Quick Orientation Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center gap-2">
+          <span class="w-3.5 h-3.5 rounded-sm bg-yellow-400 inline-block shrink-0 border border-yellow-200"></span>
+          <span><strong>Square Pad:</strong> Pin 1 / Positive (`+`)</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center gap-2">
+          <span class="w-3.5 h-3.5 rounded-full bg-yellow-500 inline-block shrink-0"></span>
+          <span><strong>Round Pad:</strong> Signal / `GND`</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center gap-2">
+          <span class="w-3.5 h-3.5 rounded bg-slate-800 border border-slate-400 inline-block shrink-0"></span>
+          <span><strong>Center SMD:</strong> Solder BEFORE Headers</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-2.5 flex items-center gap-2">
+          <span class="w-3.5 h-3.5 rounded bg-blue-600/80 border border-sky-400 inline-block shrink-0"></span>
+          <span><strong>Female Headers:</strong> Elevate Modules 8.5mm</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: CONTEXTUAL INSPECTOR & MULTIMETER SIMULATOR (5 COLS) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- =============================================================== -->
+      <!-- PANEL 1: COMPONENT PLACEMENT & ORIENTATION INSPECTOR            -->
+      <!-- =============================================================== -->
+      <div id="panel-placement" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span id="comp-badge" class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mono">Mezzanine Stack Overview</span>
+            <h2 id="comp-title" class="text-lg font-bold text-white mt-1">How the Double-Decker Stack Works</h2>
+          </div>
+          <span class="text-xs text-slate-400">Click any PCB part ⬅</span>
+        </div>
+
+        <div id="comp-body" class="text-sm text-slate-300 space-y-3 leading-relaxed">
+          <p>
+            Because your board is super compact (<strong class="text-white">46 × 32 mm</strong>), it uses a <strong class="text-emerald-400">2-Story Mezzanine Stack</strong> on the Top (`F.Cu`) side so nothing hangs underneath to hit your 2S 18650 battery:
+          </p>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+            <div class="flex items-start gap-2.5">
+              <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold mono shrink-0">FLOOR 1</span>
+              <div>
+                <strong class="text-white">Surface-Mount Chips (`U2`, `U3`, `D2`, `R1–R3`, `Q1–Q2`):</strong> Solder these directly onto the PCB pads first. They are only <span class="mono text-emerald-300">1.6 mm</span> tall!
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold mono shrink-0">FLOOR 2</span>
+              <div>
+                <strong class="text-white">Tall Female Headers (`JESP` & `JJQ`):</strong> Solder four <span class="mono text-sky-300">1×8 Female Pin Headers</span> (`8.5 mm` tall) into the outer rows. The **ESP32-CAM** and **JQ6500-16P** plug into these headers like a bridge **6.5 mm above** `U2` and `U3`!
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+            💡 <strong>Try it now:</strong> Click the <strong>"Stacked Modules (3D Overlay)"</strong> button above the board to see how the ESP32-CAM and JQ6500 sit on top of the SMD chips, or click any component on the PCB for exact Pin-1 orientation!
+          </p>
+        </div>
+
+        <!-- Quick Jump Component Pills -->
+        <div class="pt-2 border-t border-slate-800">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">Quick-Inspect Part:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="selectComponent('esp32')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">ESP32-CAM</button>
+            <button onclick="selectComponent('jq6500')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">JQ6500-16P</button>
+            <button onclick="selectComponent('u2')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">U2 (RZ7889)</button>
+            <button onclick="selectComponent('u3')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">U3 (HXJ8002)</button>
+            <button onclick="selectComponent('jbuck')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">JBUCK (5V)</button>
+            <button onclick="selectComponent('d2')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">D2 + C1</button>
+            <button onclick="selectComponent('mixer')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">J8_BT + Mixer</button>
+            <button onclick="selectComponent('j1j2')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">J1_BAT / J2_MOT</button>
+            <button onclick="selectComponent('front_io')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">J3_SRV &amp; LEDs</button>
+            <button onclick="selectComponent('j7uart')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 mono">J7_UART</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
+      <!-- PANEL 2: INTERACTIVE MULTIMETER & SMOKE-FREE BRING-UP           -->
+      <!-- =============================================================== -->
+      <div id="panel-multimeter" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
+        <div class="border-b border-slate-800 pb-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 mono">Hardware Verification</span>
+          <h2 class="text-lg font-bold text-white mt-1">Interactive Multimeter &amp; Bring-Up Tester</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Select a test below to see exact probe points and expected readings before plugging in your ESP32-CAM.</p>
+        </div>
+
+        <!-- Digital Multimeter LCD Screen -->
+        <div class="bg-slate-950 border-2 border-slate-700 rounded-2xl p-4 shadow-inner flex flex-col gap-2">
+          <div class="flex items-center justify-between text-xs text-slate-400 mono">
+            <span id="dmm-mode-label">MODE: CONTINUITY / OHMS (Ω)</span>
+            <span id="dmm-status-badge" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">PASS — SAFE</span>
+          </div>
+          <div class="bg-[#8ba888] text-slate-950 rounded-xl p-3.5 font-bold mono flex items-baseline justify-between shadow-inner border border-slate-600">
+            <span id="dmm-reading" class="text-2xl sm:text-3xl tracking-wider">OL / >10 kΩ</span>
+            <span id="dmm-unit" class="text-sm font-semibold">NO SHORT</span>
+          </div>
+          <div id="dmm-probes-desc" class="text-xs text-slate-300 mono pt-1 flex items-center justify-between">
+            <span>⚫ Black Probe: <strong>TP_GND</strong></span>
+            <span>🔴 Red Probe: <strong>TP_VBAT</strong></span>
+          </div>
+        </div>
+
+        <!-- Interactive Test Buttons -->
+        <div class="space-y-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block">Step 1 — Unpowered Short-Circuit Checks (No Battery!):</span>
+          
+          <button onclick="runMultimeterTest(1)" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 transition flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-semibold text-white">Test 1A: Battery Rail Short Check (`TP_GND` ↔ `TP_VBAT`)</div>
+              <div class="text-[11px] text-slate-400">Verifies no solder bridge across `J1_BAT` or `JBUCK` input</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-slate-800 text-amber-300 text-xs mono shrink-0">Probe Ω</span>
+          </button>
+
+          <button onclick="runMultimeterTest(2)" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 transition flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-semibold text-white">Test 1B: 5V Rail Short Check (`TP_GND` ↔ `TP_5V`)</div>
+              <div class="text-[11px] text-slate-400">Verifies `U2`, `U3`, and `D2` have no solder bridges to ground</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-slate-800 text-amber-300 text-xs mono shrink-0">Probe Ω</span>
+          </button>
+
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 block pt-2">Step 2 — Powered Voltage Checks (Unplug ESP32-CAM First!):</span>
+
+          <button onclick="runMultimeterTest(3)" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 transition flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-semibold text-white">Test 2A: Calibrate 5V Buck (`TP_GND` ↔ `TP_5V`)</div>
+              <div class="text-[11px] text-slate-400">Plug 2S battery into `J1_BAT` and tune `MP1584` pot to 5.05V</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs mono shrink-0">Probe DC V</span>
+          </button>
+
+          <button onclick="runMultimeterTest(4)" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 transition flex items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-semibold text-white">Test 2B: ESP32 Isolated 5V Pin (`TP_GND` ↔ `JESP_L Pin 1`)</div>
+              <div class="text-[11px] text-slate-400">Verify ~4.75V–4.85V after Schottky diode `D2` before seating ESP32</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs mono shrink-0">Probe DC V</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
+      <!-- PANEL 3: WHY KICAD SAYS "UNROUTED: 20" & HOW TO FIX IN 1 KEY    -->
+      <!-- =============================================================== -->
+      <div id="panel-kicad" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
+        <div class="border-b border-slate-800 pb-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 mono">KiCad DRC Check</span>
+          <h2 class="text-lg font-bold text-white mt-1">Why Your Bottom Bar Says `Unrouted: 20`</h2>
+        </div>
+
+        <div class="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+          <p>
+            Look at the bottom-left corner of your screenshot: <code class="px-1.5 py-0.5 rounded bg-slate-950 text-amber-300 mono">Pads: 98 | Vias: 2 | Track Segments: 120 | Unrouted: 20</code>.
+          </p>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="font-semibold text-white">Why are there 20 unrouted connections?</div>
+            <p class="text-xs text-slate-400">
+              All 20 of those unrouted airwires are <strong class="text-emerald-400">GND (Ground) pins</strong>! When KiCad opens a newly generated `.kicad_pcb` file, it leaves copper pour zones <em>unfilled</em> until you press the fill hotkey.
+            </p>
+          </div>
+
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+            <div class="font-bold text-emerald-300 flex items-center gap-2">
+              <span>✅ The 1-Second Fix in KiCad:</span>
+            </div>
+            <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-200">
+              <li>Click anywhere inside the KiCad PCB Editor window (not the 3D Viewer).</li>
+              <li>Press the <kbd class="px-2 py-0.5 bg-slate-900 border border-slate-700 rounded text-amber-300 font-bold mono">B</kbd> key on your keyboard.</li>
+              <li>KiCad immediately floods the `F.Cu` and `B.Cu` ground zones and connects all 20 `GND` pads with thermal-relief spokes!</li>
+              <li>Look at the bottom bar again: <code class="px-1.5 py-0.5 rounded bg-slate-900 text-emerald-400 mono">Unrouted: 0</code>!</li>
+              <li>Go to <strong>Inspect → Design Rules Checker → Run DRC</strong> to verify your board is 100% ready to print or order.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // Detailed component knowledge base matched to the horizontal 3D screenshot
+    const COMPONENT_DATA = {
+      esp32: {
+        badge: "MOD1 • TOP MEZZANINE (FLOOR 2)",
+        title: "ESP32-CAM (`JESP_L` & `JESP_R` Female Headers)",
+        html: `
+          <p>Solder two <strong class="text-white">1×8 Female Pin Headers (2.54mm)</strong> into the top and bottom rows of the <code class="text-emerald-300 mono">ESP32-CAM (TOP)</code> silkscreen rectangle on the right side of the board.</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">Square Pad = Pin 1:</strong> Bottom-left square pad (<code class="mono">JESP_L Pin 1</code>) is <strong class="text-white">+5V_ESP</strong>. Top-left square pad (<code class="mono">JESP_R Pin 1</code>) is <strong class="text-white">GND</strong>.</li>
+            <li><strong class="text-sky-300">Which way does the camera point?</strong> The OV2640 camera lens and PCB antenna face <strong class="text-white">RIGHT (➡ towards J3_SRV)</strong> so the antenna overhangs the front edge in open air.</li>
+            <li><strong class="text-emerald-300">What sits underneath it?</strong> Because female headers stand <code class="mono">8.5 mm</code> tall, <code class="mono">U3 (HXJ8002)</code>, <code class="mono">R1–R3</code>, <code class="mono">J6_SPK</code>, and <code class="mono">J8_BT</code> tuck right underneath the ESP32-CAM!</li>
+          </ul>
+        `
+      },
+      jq6500: {
+        badge: "MOD2 • TOP MEZZANINE (FLOOR 2)",
+        title: "JQ6500-16P Onboard Flash Audio (`JJQ_L` & `JJQ_R`)",
+        html: `
+          <p>Solder two <strong class="text-white">1×8 Female Pin Headers</strong> into the <code class="text-emerald-300 mono">JQ6500-16P</code> box on the left (rear) half of the PCB.</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">Orientation:</strong> Plug the JQ6500-16P into the female headers so its <strong class="text-white">Micro-USB port faces LEFT (⬅ towards J1_BAT / Rear of Car)</strong>. That lets you plug in a USB cable from the back of the Ferrari Enzo to swap horn/engine MP3 sounds!</li>
+            <li><strong class="text-emerald-300">What sits underneath it?</strong> The <code class="mono">U2 (RZ7889)</code> motor driver, <code class="mono">D2 (1N5819)</code> diode, and <code class="mono">JBUCK</code> 5V regulator pads sit cleanly underneath the elevated JQ6500 module.</li>
+          </ul>
+        `
+      },
+      u2: {
+        badge: "U2 • FLOOR 1 SMD CHIP (SOIC-8)",
+        title: "U2: RZ7889 Rear Motor H-Bridge Driver",
+        html: `
+          <p><strong class="text-amber-300">Solder this SMD chip BEFORE soldering the JQ6500 female headers!</strong></p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-white">Pin 1 Alignment:</strong> Align the small dimple/dot on the <code class="mono">RZ7889</code> package with the <strong class="text-amber-300">bottom-left pad</strong> (marked with the silkscreen notch).</li>
+            <li><strong class="text-white">Function:</strong> Takes <code class="mono">GPIO 14 (M1_FWD)</code> and <code class="mono">GPIO 15 (M1_REV)</code> from the ESP32-CAM and drives up to 3A out to <code class="mono">J2_MOT</code>.</li>
+          </ul>
+        `
+      },
+      u3: {
+        badge: "U3 • FLOOR 1 SMD CHIP (SOIC-8)",
+        title: "U3: HXJ8002 3W Mono Class-D Audio Amplifier",
+        html: `
+          <p><strong class="text-amber-300">Solder this SMD chip BEFORE soldering the ESP32-CAM female headers!</strong></p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-white">Pin 1 Alignment:</strong> Align Pin 1 of the <code class="mono">HXJ8002</code> (or <code class="mono">PAM8403</code>/8002B) with the <strong class="text-amber-300">bottom-left pad</strong> inside the <code class="mono">U3</code> outline.</li>
+            <li><strong class="text-white">Function:</strong> Amplifies the mixed Bluetooth music (<code class="mono">MH-M18</code>) + horn/engine SFX (<code class="mono">JQ6500</code>) and drives your 36mm 3W speaker via <code class="mono">J6_SPK</code>.</li>
+          </ul>
+        `
+      },
+      jbuck: {
+        badge: "JBUCK • 5V STEP-DOWN REGULATOR",
+        title: "JBUCK: MP1584EN / Mini-360 5V Buck Converter",
+        html: `
+          <p>3-pin header located at the rear-left inside the JQ6500 bay:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">Bottom Square Pad (Pin 1):</strong> <code class="mono">VBAT</code> (+7.4V input from 2S 18650 battery).</li>
+            <li><strong class="text-slate-300">Middle Round Pad (Pin 2):</strong> <code class="mono">GND</code>.</li>
+            <li><strong class="text-emerald-300">Top Round Pad (Pin 3):</strong> <code class="mono">+5V_MAIN</code> regulated output.</li>
+          </ul>
+        `
+      },
+      d2: {
+        badge: "D2 & C1 • ANTI-BROWNOUT FILTER",
+        title: "D2 (1N5819 Diode) & C1 (470µF Capacitor)",
+        html: `
+          <p>Protects the ESP32-CAM from resetting when the steering servo or rear motor spikes current:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">D2 (1N5819 Schottky Diode):</strong> The silver cathode band on the diode MUST face <strong class="text-white">DOWN (towards the bottom edge / C1)</strong> so current flows from <code class="mono">+5V_MAIN</code> into <code class="mono">+5V_ESP</code>.</li>
+            <li><strong class="text-sky-300">C1 (470µF Electrolytic Cap):</strong> Positive (<code class="mono">+</code>) leg goes into the <strong class="text-white">Square Pad</strong>; negative (<code class="mono">-</code>) white-stripe leg goes into the round pad. Bend the capacitor flat sideways so the ESP32-CAM seats cleanly above it!</li>
+          </ul>
+        `
+      },
+      mixer: {
+        badge: "J8_BT & R1–R3 • DUAL-MODE AUDIO MIXER",
+        title: "MH-M18 Bluetooth Header (`J8_BT`) & 10kΩ Mixer (`R1–R3`)",
+        html: `
+          <p>Combines stereo phone music from the <code class="mono">MH-M18</code> Bluetooth receiver with horn/engine sounds from the <code class="mono">JQ6500</code>:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">J8_BT (4-Pin Header):</strong> From left to right: <code class="mono">Pin 1 (Square) = +5V</code>, <code class="mono">Pin 2 = GND</code>, <code class="mono">Pin 3 = BT_L</code>, <code class="mono">Pin 4 = BT_R</code>.</li>
+            <li><strong class="text-emerald-300">R3, R1, R2 (0805 SMD Resistors):</strong> Solder three <code class="mono">10kΩ</code> (or <code class="mono">4.7kΩ</code> on R3 for louder horn) 0805 resistors across these pads.</li>
+          </ul>
+        `
+      },
+      j6spk: {
+        badge: "J6_SPK • SPEAKER OUTPUT",
+        title: "J6_SPK: 36mm 4Ω 3W Rear Speaker Connector",
+        html: `
+          <p>2-pin header right above <code class="mono">U3 (HXJ8002)</code> that wires to your rear gearbox speaker enclosure:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">Right Square Pad:</strong> <code class="mono">SPK_P (+)</code> from HXJ8002 Pin 5.</li>
+            <li><strong class="text-slate-300">Left Round Pad:</strong> <code class="mono">SPK_N (-)</code> from HXJ8002 Pin 8.</li>
+          </ul>
+        `
+      },
+      j1j2: {
+        badge: "REAR EDGE POWER & MOTOR",
+        title: "J1_BAT (7.4V 2S Battery) & J2_MOT (Rear N20 Motor)",
+        html: `
+          <p>Located on the far-left (rear) edge of the PCB:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-red-400">J1_BAT (Bottom-Left):</strong> <strong class="text-amber-300">Square Pad (Bottom) = +7.4V VBAT Red Wire</strong>; Round Pad (Top) = <code class="mono">GND</code> Black Wire. Double-check polarity before plugging in!</li>
+            <li><strong class="text-sky-300">J2_MOT (Top-Left):</strong> Connects directly to your rear N20 drive motor terminals (<code class="mono">M1_A</code> and <code class="mono">M1_B</code>).</li>
+          </ul>
+        `
+      },
+      front_io: {
+        badge: "FRONT EDGE STEERING & LIGHTING",
+        title: "J3_SRV (SG92R Servo), J4_LED (Headlights) & J5_TAIL",
+        html: `
+          <p>Located along the far-right (front) edge of the PCB under the camera nose:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-emerald-300">J3_SRV (Center 3-Pin Servo Header):</strong> Top Round Pad = <code class="mono">GND (Brown)</code>, Middle Round Pad = <code class="mono">+5V (Red)</code>, Bottom Square Pad = <code class="mono">SERVO_PWM Signal (Orange, GPIO 13)</code>.</li>
+            <li><strong class="text-amber-300">J4_LED &amp; J5_TAIL:</strong> Driven by the two <code class="mono">AO3400</code> N-MOSFETs (<code class="mono">Q1</code> &amp; <code class="mono">Q2</code>). Round pad = <code class="mono">+5V Anode (+)</code>; Square pad = switched <code class="mono">Cathode (-)</code>.</li>
+          </ul>
+        `
+      },
+      j7uart: {
+        badge: "J7_UART • ON-BOARD FIRMWARE FLASHING",
+        title: "J7_UART: 4-Pin USB-to-TTL Programming Header",
+        html: `
+          <p>Lets you upload Arduino code to the ESP32-CAM without ever unplugging it from the car:</p>
+          <ul class="list-disc list-inside space-y-1.5 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <li><strong class="text-amber-300">Pin 1 (Left Square Pad):</strong> <code class="mono">U0TXD</code> (Connect to USB-TTL <code class="mono">RX</code>).</li>
+            <li><strong class="text-sky-300">Pin 2:</strong> <code class="mono">U0RXD</code> (Connect to USB-TTL <code class="mono">TX</code>).</li>
+            <li><strong class="text-slate-300">Pin 3:</strong> <code class="mono">GND</code>.</li>
+            <li><strong class="text-emerald-300">Pin 4 (Rightmost Pad):</strong> <code class="mono">IO0_BOOT</code> (Jumper to Pin 3 <code class="mono">GND</code> while powering on to enter Flash Download Mode).</li>
+          </ul>
+        `
+      },
+      testpoints: {
+        badge: "DIAGNOSTIC TEST POINTS",
+        title: "Top Edge Multimeter Test Pads (`TP_VBAT` .. `TP_SERVO`)",
+        html: `
+          <p>Six exposed gold probe rings along the top-left edge so you can touch your multimeter probes safely without slipping onto IC pins:</p>
+          <div class="grid grid-cols-2 gap-1.5 text-xs mono bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <div>1. <strong class="text-amber-300">TP_VBAT:</strong> 7.4V–8.4V</div>
+            <div>2. <strong class="text-slate-300">TP_GND:</strong> 0.0V Reference</div>
+            <div>3. <strong class="text-emerald-300">TP_5V:</strong> 5.05V Main Rail</div>
+            <div>4. <strong class="text-sky-300">TP_FWD:</strong> GPIO 14 PWM</div>
+            <div>5. <strong class="text-sky-300">TP_REV:</strong> GPIO 15 PWM</div>
+            <div>6. <strong class="text-purple-300">TP_SERVO:</strong> GPIO 13 PWM</div>
+          </div>
+        `
+      }
+    };
+
+    function selectComponent(key) {
+      // Switch to placement tab if not active
+      switchMainTab('placement');
+
+      // Highlight SVG group
+      document.querySelectorAll('.pcb-group').forEach(el => el.classList.remove('active'));
+      const mapId = {
+        esp32: 'comp-esp32', jq6500: 'comp-jq6500', u2: 'comp-u2', u3: 'comp-u3',
+        jbuck: 'comp-jbuck', d2: 'comp-d2', mixer: 'comp-mixer', j6spk: 'comp-j6spk',
+        j1j2: 'comp-j1j2', front_io: 'comp-front-io', j7uart: 'comp-j7uart', testpoints: 'comp-testpoints'
+      }[key];
+      if (mapId && document.getElementById(mapId)) {
+        document.getElementById(mapId).classList.add('active');
+      }
+
+      const info = COMPONENT_DATA[key];
+      if (info) {
+        document.getElementById('comp-badge').textContent = info.badge;
+        document.getElementById('comp-title').textContent = info.title;
+        document.getElementById('comp-body').innerHTML = info.html;
+      }
+    }
+
+    function setBoardView(mode) {
+      const btnTop = document.getElementById('btn-view-top');
+      const btnXray = document.getElementById('btn-view-xray');
+      const btnBot = document.getElementById('btn-view-bottom');
+      const overlay = document.getElementById('layer-stacked-modules');
+      const bcu = document.getElementById('layer-bcu-tracks');
+      const fcu = document.getElementById('layer-fcu-tracks');
+
+      [btnTop, btnXray, btnBot].forEach(b => {
+        b.className = "px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700";
+      });
+
+      if (mode === 'top') {
+        btnTop.className = "px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+        overlay.setAttribute('opacity', '0');
+        bcu.setAttribute('opacity', '0.35');
+        fcu.setAttribute('opacity', '0.75');
+      } else if (mode === 'xray') {
+        btnXray.className = "px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-500/20 text-sky-300 border border-sky-500/40";
+        overlay.setAttribute('opacity', '1');
+        bcu.setAttribute('opacity', '0.25');
+        fcu.setAttribute('opacity', '0.5');
+      } else if (mode === 'bottom') {
+        btnBot.className = "px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40";
+        overlay.setAttribute('opacity', '0');
+        bcu.setAttribute('opacity', '1');
+        fcu.setAttribute('opacity', '0.15');
+      }
+    }
+
+    function toggleGndPour(checked) {
+      document.getElementById('layer-gnd-pour').setAttribute('opacity', checked ? '1' : '0');
+    }
+
+    function switchMainTab(tab) {
+      const tabs = ['placement', 'multimeter', 'kicad'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('tab-' + t);
+        const panel = document.getElementById('panel-' + t);
+        if (t === tab) {
+          btn.className = "px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition bg-emerald-500 text-slate-950 shadow";
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = "px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition text-slate-300 hover:text-white";
+          panel.classList.add('hidden');
+        }
+      });
+    }
+
+    function runMultimeterTest(testNum) {
+      const modeLbl = document.getElementById('dmm-mode-label');
+      const badge = document.getElementById('dmm-status-badge');
+      const reading = document.getElementById('dmm-reading');
+      const unit = document.getElementById('dmm-unit');
+      const desc = document.getElementById('dmm-probes-desc');
+
+      document.querySelectorAll('.pcb-group').forEach(el => el.classList.remove('active'));
+
+      if (testNum === 1) {
+        document.getElementById('comp-testpoints').classList.add('active');
+        document.getElementById('comp-j1j2').classList.add('active');
+        modeLbl.textContent = "MODE: CONTINUITY / RESISTANCE (Ω)";
+        badge.textContent = "PASS — NO SHORT";
+        badge.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+        reading.textContent = "OL (> 50 kΩ)";
+        unit.textContent = "SILENT (NO BEEP)";
+        desc.innerHTML = `<span>⚫ Black: <strong>TP_GND</strong></span><span>🔴 Red: <strong>TP_VBAT (or J1_BAT +)</strong></span>`;
+      } else if (testNum === 2) {
+        document.getElementById('comp-testpoints').classList.add('active');
+        document.getElementById('comp-jbuck').classList.add('active');
+        modeLbl.textContent = "MODE: CONTINUITY / RESISTANCE (Ω)";
+        badge.textContent = "PASS — SAFE TO POWER";
+        badge.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+        reading.textContent = "12.4 kΩ";
+        unit.textContent = "SILENT (NO BEEP)";
+        desc.innerHTML = `<span>⚫ Black: <strong>TP_GND</strong></span><span>🔴 Red: <strong>TP_5V</strong></span>`;
+      } else if (testNum === 3) {
+        document.getElementById('comp-testpoints').classList.add('active');
+        document.getElementById('comp-jbuck').classList.add('active');
+        modeLbl.textContent = "MODE: DC VOLTAGE (20V RANGE)";
+        badge.textContent = "5V RAIL LOCKED";
+        badge.className = "px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold";
+        reading.textContent = "5.05 V DC";
+        unit.textContent = "MAIN 5V RAIL";
+        desc.innerHTML = `<span>⚫ Black: <strong>TP_GND</strong></span><span>🔴 Red: <strong>TP_5V</strong></span>`;
+      } else if (testNum === 4) {
+        document.getElementById('comp-esp32').classList.add('active');
+        document.getElementById('comp-d2').classList.add('active');
+        modeLbl.textContent = "MODE: DC VOLTAGE (20V RANGE)";
+        badge.textContent = "READY FOR ESP32-CAM";
+        badge.className = "px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold";
+        reading.textContent = "4.78 V DC";
+        unit.textContent = "AFTER D2 DIODE";
+        desc.innerHTML = `<span>⚫ Black: <strong>TP_GND</strong></span><span>🔴 Red: <strong>JESP_L Pin 1 (Square)</strong></span>`;
+      }
+    }
+  </script>
+</body>
+</html>

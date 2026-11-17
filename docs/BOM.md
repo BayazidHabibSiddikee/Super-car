@@ -74,7 +74,7 @@ Source: `super car.pdf` complete BOM section. Standardized on 0805 SMD passives 
 
 ## Ordering Checklist
 
-- [ ] PCB: 5× `FPV_RC_Carrier_46x32.kicad_pcb` Gerbers
+- [ ] PCB: 5× `FPV_RC_Carrier_46x32_v2.kicad_pcb` Gerbers
 - [ ] SMD passives: 0805 reels per BOM table
 - [ ] Modules: ESP32-CAM, JQ6500-16P or DFPlayer Mini, MH-M18, RZ7889, MP1584EN
 - [ ] Mechanical: N20 motor, SG92R servo, MR63ZZ bearings, 3 mm steel rod, brass coupler

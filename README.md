@@ -18,7 +18,9 @@
 |-----------|----------|
 | ![Ferrari Enzo fixed isometric](docs/images/render_ferrari_enzo_fixed.png) | ![Ferrari Enzo fixed top](docs/images/render_ferrari_enzo_fixed_top.png) |
 
-### KiCad 46 × 32 mm carrier PCB — 3D render
+### KiCad 46 × 32 mm carrier PCB (v2) — 3D render & Interactive Guide
+
+> 🌐 **Interactive Guide**: Open [docs/pcb_interactive_guide.html](docs/pcb_interactive_guide.html) in your browser for the interactive 2.5D placement viewer, mezzanine stacking 3D overlay, and multimeter bring-up simulator!
 
 | Top (component side) | Bottom (copper side) |
 |----------------------|----------------------|

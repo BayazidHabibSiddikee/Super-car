@@ -9,12 +9,12 @@ Production-quality v2:
   - Antenna keepout zone on both copper layers
   - DIY-etchable: 0.8-1.5 mm tracks, 0.5 mm min clearance, 4 top-layer jumpers
 Run: python3 kicad/generate_rc_pcb.py
-Opens: FPV_RC_Carrier_46x32.kicad_pcb in KiCad PCB Editor
+Opens: FPV_RC_Carrier_46x32_v2.kicad_pcb in KiCad PCB Editor
 """
 
 import math
 
-OUTPUT_FILE = "FPV_RC_Carrier_46x32.kicad_pcb"
+OUTPUT_FILE = "FPV_RC_Carrier_46x32_v2.kicad_pcb"
 
 
 def pad_th(num, x, y, drill=0.9, size=1.8, net_id=0, net_name=""):

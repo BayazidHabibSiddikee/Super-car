@@ -101,7 +101,7 @@ flowchart TD
 |-------|-------------|---------------|
 | 0 | Repo scaffold + docs | `git commit` clean, README present |
 | 1 | 5 FreeCAD parts (STL) | Check Geometry = 0 invalid shapes |
-| 2 | `FPV_RC_Carrier_46x32.kicad_pcb` | KiCad DRC = 0 errors, 0 airwires |
+| 2 | `FPV_RC_Carrier_46x32_v2.kicad_pcb` | KiCad DRC = 0 errors, 0 airwires |
 | 3 | Populated bare PCB | Multimeter: no shorts, 5V rail OK |
 | 4 | Flash firmware | AP `RC_FPV_CAR` broadcasts, video on :81 |
 | 5 | Audio mixed output | Phone music + horn overlap on one speaker |
