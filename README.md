@@ -18,9 +18,29 @@
 |-----------|----------|
 | ![Ferrari Enzo fixed isometric](docs/images/render_ferrari_enzo_fixed.png) | ![Ferrari Enzo fixed top](docs/images/render_ferrari_enzo_fixed_top.png) |
 
-### KiCad 46 × 32 mm carrier PCB (v2) — 3D render & Interactive Guide
+### KiCad 46 × 32 mm Carrier PCB (v2) — Interactive Guide & 3D Renders
 
-> 🌐 **Interactive Guide**: Open [docs/pcb_interactive_guide.html](docs/pcb_interactive_guide.html) in your browser for the interactive 2.5D placement viewer, mezzanine stacking 3D overlay, and multimeter bring-up simulator!
+> 🌐 **Interactive PCB Simulator**: [Open the Interactive Guide (`docs/pcb_interactive_guide.html`)](docs/pcb_interactive_guide.html) directly in any browser for clickable pinouts, 3D mezzanine stacking overlays, and live multimeter smoke-test simulation!
+>
+> You can also host or view it live via GitHub Pages or open `file:///.../docs/pcb_interactive_guide.html`.
+
+[![Interactive PCB Design](docs/images/pcb_interactive_board.svg)](docs/pcb_interactive_guide.html)
+
+<details open>
+<summary><b>🔍 Interactive Board Layout &amp; Pinout Quick Reference (Click to Expand / Collapse)</b></summary>
+
+<br>
+
+| Section | Key Components | Pin 1 &amp; Orientation Rules | Underneath / Stacking |
+|---|---|---|---|
+| **Rear (Left)** | **JQ6500-16P** (Elevated on 1×8 female headers) | Micro-USB port faces **LEFT (Rear of car)** | Sits 8.5 mm above **U2 (RZ7889)**, **JBUCK (MP1584)** &amp; **D2 (1N5819)** |
+| **Front (Right)** | **ESP32-CAM** (Elevated on 1×8 female headers) | Camera lens &amp; Wi-Fi antenna face **RIGHT (Front bumper)** | Sits 8.5 mm above **U3 (HXJ8002)**, **J8_BT**, &amp; **R1–R3 mixer** |
+| **Floor 1 (SMD)** | **U2 (RZ7889)** &amp; **U3 (HXJ8002)** | Pin 1 notch / dot aligned to bottom-left pad | Solder these SMD chips **first** before female headers |
+| **Rear Edge** | **J1_BAT** &amp; **J2_MOT** | Bottom square pad = `+7.4V VBAT` (Red wire), Round pad = `GND` | Motor output leads directly to rear N20 gearbox |
+| **Front Edge** | **J3_SRV**, **J4_LED**, **J5_TAIL** | J3_SRV: Brown (`GND`), Red (`+5V`), Orange (`GPIO 13`) | Driven by dual AO3400 N-MOSFETs (`Q1`, `Q2`) |
+| **Top Diagnostics** | **TP_VBAT .. TP_SERVO** | 6 gold test pads: `VBAT`, `GND`, `5V`, `FWD`, `REV`, `SERVO` | Safe multimeter probing points before plugging in ESP32 |
+
+</details>
 
 | Top (component side) | Bottom (copper side) |
 |----------------------|----------------------|
