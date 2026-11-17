@@ -35,10 +35,9 @@ supercar/
 ├── firmware/
 │   └── FPV_Car_DFPlayer_AutoResume.ino
 ├── freecad/
-│   ├── rc_gearboxes.py            # Rear N20 + front SG92R gearboxes
-│   ├── complete_chassis_v2.py     # Full 500 g chassis + upper deck
-│   ├── body_shell.py              # Snap-on aerodynamic body
-│   └── wheels_tires.py            # PETG rims + TPU treaded tires
+│   ├── Ferrari_Enzo_Modular_Assembly.py  # Modular Enzo: shell, glass, chassis, audio (6 App::Part modules)
+│   ├── FPV_RC_Direct_Print_Plate.py      # Master print plate (15 parts flat at Z=0)
+│   └── run_headless.py                   # Headless batch runner → output/*.FCStd + *.stl
 ├── kicad/
 │   └── generate_rc_pcb.py         # 1:1 printable KiCad PCB generator
 ├── mobile_app/

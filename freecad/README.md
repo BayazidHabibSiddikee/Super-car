@@ -1,72 +1,65 @@
-# FreeCAD Mechanical Design — Supercar RC Car
+# FreeCAD Mechanical Design — Supercar RC Car (Ferrari Enzo)
 
-Production-quality v2 FreeCAD Python macros for the Supercar ESP32-CAM FPV RC car.
+Current-design macros for the ESP32-CAM FPV Ferrari Enzo RC car.
+All older/superseded designs (Jeep Wrangler, F40, F40 Competizione,
+single-piece Enzo shell, v1 chassis/gearbox/wheel scripts) have been
+removed — this directory now contains only the active build.
 
 ## Files
 
 | File | Generates | Purpose |
 |------|-----------|---------|
-| `rc_gearboxes.py` | 5 parts | Rear N20 + MR63ZZ gearbox, front SG92R + C-hub steering, Ackermann knuckles |
-| `complete_chassis_v2.py` | 5 parts | Full 500 g chassis, upper deck, battery cradle, nose bumper |
-| `body_shell.py` | 1 part | Snap-on aerodynamic body shell with wheel arches, camera viewport, spoiler |
-| `wheels_tires.py` | 8 parts | PETG rims + TPU chevron treaded tires |
+| `Ferrari_Enzo_Modular_Assembly.py` | 20 parts in 6 `App::Part` modules | Full modular Enzo: body shell, separate glass/lenses, chassis + steering, wheels/TPU tires, sealed 36 mm speaker enclosure + gasket, low-profile PCB deck |
+| `FPV_RC_Direct_Print_Plate.py` | 15 parts flat at Z=0 | Master print plate: chassis, gearbox cap, decks, knuckles, tie-rod, pushrod, rims, TPU tires |
 
-## Prerequisites
+Generated artifacts live in `output/` (gitignored): 2 `.FCStd` documents
+plus per-part `.stl` exports.
 
-- FreeCAD 0.21+ with `Part` workbench
-- Units: mm
-- Materials: PETG or ABS for structural parts; 95A TPU for tires
+## Vehicle Specifications
+
+| Parameter | Value |
+|-----------|-------|
+| Length × Width × Height | 169 × 74 × 38.5 mm (~1:27 Enzo proportions) |
+| Wheelbase | 115 mm |
+| Chassis width | 54 mm (54.8 mm snap-fit cavity) |
+| Electronics deck height | 22 mm (above 2S 18650 battery) |
+| Speaker | 36 mm 3 W 4 Ω in sealed ~15.5 cm³ chamber atop rear gearbox |
+| Rear drivetrain | N20 motor + MR63ZZ bearings, 48 mm span gearbox |
+| Front steering | SG92R servo, Ackermann C-hub linkage, 66 mm track |
 
 ## How to Run
 
-1. Open FreeCAD
-2. Macro → Macros... → Create
-3. Paste the entire script, click Execute (Ctrl+F6)
-4. Part Workbench → Check Geometry on each object (expect 0 invalid shapes)
-5. File → Export → STL Mesh (*.stl) for each part
-6. Slice: PETG, 0.2 mm layer, 4 walls/perimeters, 40% gyroid infill
+Headless batch (regenerates all `.FCStd` + `.stl`):
 
-## Quality Features (v2)
+```bash
+cd <project root>
+flatpak run --command=FreeCADCmd org.freecad.FreeCAD -c "exec(open('freecad/run_headless.py').read())"
+```
 
-| Feature | Implementation |
-|---------|---------------|
-| Parameter validation | All scripts validate dimensions before building (raises on bad values) |
-| Geometry check | Each script runs `checkGeometry()` on all outputs and reports pass/fail |
-| Parametric | All dimensions in a `P` dict at the top — change one value, rebuild |
-| Documented | Every build section has a comment block explaining purpose |
+In the FreeCAD GUI: Macro → Macros... → select a script → Execute.
 
 ## Print Settings by Part
 
 | Part | Material | Walls | Infill | Notes |
 |------|----------|-------|--------|-------|
-| Chassis belly pan + gearboxes | PETG/ABS | 4 | 40% gyroid | Structural, 500 g load |
-| Upper deck + speaker deck | PETG | 3 | 20% gyroid | Electronics mounting |
-| Body shell | PETG | 3 | 20% gyroid | Print upside-down on roof |
-| Rims | PETG/ABS | 4 | 40% gyroid | Hub down on bed |
-| Tires | 95A TPU | 3 | 15% gyroid | Stretch over rims |
+| Main body shell | Red PETG | 3 | 20% gyroid | Print upside-down on roof |
+| Glass / lens inserts | Clear PETG 1.0–1.2 mm sheet or print | 3 | 100% | Cut to fit recessed seats |
+| Chassis, gearbox, decks | PETG | 4 | 40% gyroid | Structural |
+| Speaker enclosure | PETG | 3 | 25% | Sealed — check layer airtightness |
+| TPU gasket / tires | 95A TPU | 3 | 15% gyroid | |
+| Rims | PETG | 4 | 40% gyroid | Hub down on bed |
 
-## Assembly Order
+## Modular Assembly Tree
 
-1. Print all parts
-2. Press MR63ZZ bearings into rear gearbox bearing seats
-3. Insert 3 mm steel rear axle through bearings
-4. Couple N20 motor to axle with 3 mm brass coupler
-5. Bolt rear gearbox upper cap with 4× M2 screws
-6. Mount SG92R servo in front bridge
-7. Assemble steering knuckles with M2 kingpins
-8. Install tie-rods between knuckles and servo horn
-9. Snap body shell onto chassis rails
-10. Mount TPU tires on PETG rims
+```
+Ferrari_Enzo_Modular_Assembly
+├── 01_Exterior_Body       Main_Body_Shell_Enzo, Rear_Diffuser_And_Exhaust
+├── 02_Glass_And_Lights    Windshield insert, side glass L/R, headlight lenses L/R
+├── 03_Chassis_And_Steering Main_Chassis_Base, Rear_Gearbox_Upper_Cap
+├── 04_Wheels_And_Tires    4× rims + 4× TPU tires (on-axle positions)
+├── 05_Audio_System        Sealed_Speaker_Enclosure_36mm, TPU_Speaker_Gasket
+└── 06_Electronics_Deck    Low_Profile_PCB_Deck (Z = 22 mm)
+```
 
-## Key Dimensions
-
-| Parameter | Value | Where |
-|-----------|-------|-------|
-| Wheelbase | 115 mm | `complete_chassis_v2.py` |
-| Chassis width | 54 mm | `complete_chassis_v2.py` |
-| Front track | 64-66 mm | `rc_gearboxes.py` / `complete_chassis_v2.py` |
-| Rear span | 46-48 mm | `rc_gearboxes.py` / `complete_chassis_v2.py` |
-| Tray Z height | 37 mm | `complete_chassis_v2.py` |
-| Tire OD | 34 mm | `wheels_tires.py` |
-| N20 motor pocket | 12.15 × 10.15 mm | `rc_gearboxes.py` |
-| MR63ZZ bearing seat | 6.08 mm Ø | `rc_gearboxes.py` |
+Every solid is refined with `removeSplitter()` and validated with
+`isValid()` — run Part → Check Geometry (BOPCheck) to confirm before printing.

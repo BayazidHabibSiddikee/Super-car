@@ -13,11 +13,10 @@ flowchart TD
     %% Phase 1 — Mechanical
     P1[("Phase 1: FreeCAD Mechanical Design")] --> P2
     P1:::phase1
-    P1 --> P1a[Rear N20 + MR63ZZ gearbox<br/>rc_gearboxes.py]
-    P1 --> P1b[Front SG92R + Ackermann C-hub<br/>rc_gearboxes.py]
-    P1 --> P1c[Complete 500g chassis + upper deck<br/>complete_chassis_v2.py]
-    P1 --> P1d[Snap-on aerodynamic body shell<br/>body_shell.py]
-    P1 --> P1e[PETG rims + TPU treaded tires<br/>wheels_tires.py]
+    P1 --> P1a[Rear N20 + MR63ZZ gearbox<br/>Ferrari_Enzo_Modular_Assembly.py]
+    P1 --> P1b[Front SG92R + Ackermann C-hub<br/>Ferrari_Enzo_Modular_Assembly.py]
+    P1 --> P1c[Modular Enzo shell + glass + audio<br/>Ferrari_Enzo_Modular_Assembly.py]
+    P1 --> P1d[Master print plate - 15 parts<br/>FPV_RC_Direct_Print_Plate.py]
 
     %% Phase 2 — PCB
     P2[("Phase 2: KiCad Carrier PCB<br/>46 × 32 mm")] --> P3

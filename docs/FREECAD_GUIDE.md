@@ -1,73 +1,56 @@
 # FreeCAD Mechanical Design Guide
 
-Source: `super car.pdf` FreeCAD Python macro sections. All scripts run inside FreeCAD via Macro → Macros → Create → paste → Execute (Ctrl+F6). Print in PETG/ABS (PLA too brittle for 500 g gearboxes).
+Ferrari Enzo low-profile RC body — all scripts run inside FreeCAD via
+Macro → Macros → Create → Execute (Ctrl+F6), or headlessly via
+`freecad/run_headless.py`. Print in PETG (PLA too brittle); 95A TPU for
+tires and speaker gasket.
 
 ## Prerequisites
 
-- FreeCAD with `Part` workbench
+- FreeCAD 1.0+ with `Part` workbench
 - Units: mm
-- Materials: PETG or ABS for structural parts; 95A TPU for tires
+- Materials: PETG for structural/cosmetic parts; 95A TPU for tires + gasket; clear 1.0–1.2 mm PETG/acrylic for glass inserts
 
 ## Scripts
 
-### `freecad/rc_gearboxes.py` — Rear N20 + Front SG92R Gearboxes
+### `freecad/Ferrari_Enzo_Modular_Assembly.py` — Full Modular Enzo Assembly
 
-Generates 5 parts:
-- `Rear_Gearbox_Lower` / `Rear_Gearbox_Upper` — split clamshell housing, N20 pocket 12.15 × 10.15 mm (+0.15 tolerance), dual MR63ZZ bearing seats (6.08 mm bore × 2.6 mm deep), 3 mm steel axle pass-through, M2 clamping holes
-- `Front_Steering_Bridge` — 3 mm crossmember with SG92R pocket (23.1 × 12.5 mm), C-hub arms with M2 kingpin bores
-- `Steering_Knuckle_Left` / `Steering_Knuckle_Right` — pivot knuckles with 3.2 mm axle bores, M2 kingpin pivots, 12° Ackermann tie-rod arms
+Generates 20 validated solids organized into 6 `App::Part` containers:
 
-Key dimensions:
-- N20 motor pocket: 12.20 × 10.20 mm, depth 12–14 mm
-- MR63ZZ seat: 6.05–6.10 mm Ø, 2.60 mm deep
-- Rear span: 46 mm; front track: 64 mm
-- Wall thickness: 3 mm
-
-### `freecad/complete_chassis_v2.py` — Full 500 g Chassis + Upper Deck
-
-Generates:
-- `Main_Chassis_With_Gearboxes` — belly pan (3 mm), side rails (10 mm high), rear N20 + bearing gearbox integrated, front SG92R bridge, 2S 18650 cradle (Y=42→111 mm), front bumper with 15° camera cowl
-- `Upper_PCB_And_Speaker_Deck` — at TRAY_Z = 37 mm, speaker ring (36 mm Ø), 4× M2 PCB standoffs, DFPlayer cutout window
-- `Rear_Gearbox_Upper_Cap` — separate clamshell cap
-
-Key dimensions:
-- Wheelbase: 115 mm; chassis width: 54 mm; total length: ~157 mm
-- Battery bay: 69 × 38 mm at Y=42→111
-- Speaker: 36.5 mm Ø ring at rear of upper deck
-- Tray Z raised to 37 mm for bottom-mounted DFPlayer clearance above 2S battery
-- Pillars thickened to 3.5 mm radius for 500 g torsional stiffness
-
-### `freecad/body_shell.py` — Snap-On Aerodynamic Body Shell
-
-Generates `Aerodynamic_Car_Body_Shell`:
-- Lofted outer profile, 2 mm walls, hollow interior
-- Wheel arch cutouts: rear 20 mm Ø, front 22.5 mm Ø (±40° steering lock)
-- FPV camera viewport (22 × 18 mm at Y=125, Z=46), dual headlight ports
-- 5× roof louver vents above speaker (Y=51→69)
-- Rear DFPlayer MicroSD access cutout
-- Snap-on rocker retention clips under belly pan rails (Y=63→98)
-- Rear spoiler wing (8° downforce)
-- Roof Z = 65 mm (clears ESP32-CAM stack at 59.5 mm + 3.5 mm gap)
-
-Print upside-down on roof; PETG, 0.2 mm layer, 3 walls, 20% infill; tree supports under spoiler only.
-
-### `freecad/wheels_tires.py` — PETG Rims + TPU Tires
-
-Generates 8 parts:
-- `Rear_Drive_Rim_Left/Right` — 5-spoke PETG rim, 3 mm D-shaft bore with flat chord, M2.5 set-screw boss
-- `Front_Steer_Rim_Left/Right` — 3.18 mm free-spin bore, retaining lip
-- `TPU_Tire_1…4` — 34 mm Ø × 14 mm wide chevron-tread TPU tire with interlocking bead rib
+- **01_Exterior_Body** — `Main_Body_Shell_Enzo` (38.5 mm tall × 74 mm wide,
+  2 mm walls, outer-only wheel arches preserving the F1 nose, recessed
+  1.3 mm window seats, rocker snap clips), `Rear_Diffuser_And_Exhaust`
+  (5 strakes + quad exhaust)
+- **02_Glass_And_Lights** — `Front_Windshield_Clear_Insert` (Ø11 mm camera
+  aperture), `Side_Glass_L/R`, `Headlight_Lens_L/R` (separate clear inserts)
+- **03_Chassis_And_Steering** — `Main_Chassis_Base` (2.5 mm belly pan, side
+  rails, integrated rear N20 gearbox lower half with MR63ZZ bearing seats,
+  SG92R servo pocket, front C-hub bridge), `Rear_Gearbox_Upper_Cap`
+- **04_Wheels_And_Tires** — 4 rims + 4 TPU tires positioned on the axles
+- **05_Audio_System** — `Sealed_Speaker_Enclosure_36mm` (~15.5 cm³ sealed
+  chamber atop the rear gearbox, 36.2 mm bore, 4× M2 bosses),
+  `TPU_Speaker_Gasket`
+- **06_Electronics_Deck** — `Low_Profile_PCB_Deck` at Z = 22 mm with 4×
+  PCB standoff bosses
 
 Key dimensions:
-- Tire OD: 34 mm (17 mm radius); clears body arches with 3 mm rear / 5.5 mm front clearance
-- Rim OD: 24 mm; bead depth 1.2 mm
-- Print rims: PETG, 4 walls, 40% gyroid, hub down
-- Print tires: 95A TPU, 3 walls, 15% gyroid
+- Vehicle: 169 × 74 × 38.5 mm (~1:27 Enzo proportions)
+- Wheelbase: 115 mm; chassis width: 54 mm (54.8 mm snap-fit cavity)
+- Front track: 66 mm; rear gearbox span: 48 mm
+- Every solid is `removeSplitter()`-refined and `isValid()`-checked
+
+### `freecad/FPV_RC_Direct_Print_Plate.py` — Master Print Plate
+
+Generates 15 mechanical parts laid flat at Z = 0 for direct slicing:
+rear gearbox upper cap, main chassis base, upper audio + PCB deck,
+steering knuckles L/R, Ackermann tie-rod, servo pushrod link, 4 rims,
+4 TPU chevron-tread tires (34 mm Ø × 14 mm).
 
 ## Verification Checklist
 
-- [ ] Part → Check Geometry: 0 invalid shapes on all exported parts
-- [ ] Dry-fit MR63ZZ bearings and N20 motor in rear lower shell
-- [ ] 500 g weight on center deck: zero axle flex
+- [ ] Part → Check Geometry (BOPCheck): 0 invalid shapes on all parts
+- [ ] Dry-fit MR63ZZ bearings and N20 motor in rear gearbox
+- [ ] Speaker drops into `Sealed_Speaker_Enclosure_36mm` with gasket seated
+- [ ] Glass inserts fit the 1.3 mm recessed window seats
 - [ ] Spin rear wheels by hand: N20 gearbox turns smooth, zero binding
-- [ ] Export each part as separate STL; orient for printing per script notes
+- [ ] Export per-module STLs; orient shell upside-down on roof for printing
