@@ -6,6 +6,12 @@
 
 ## Gallery
 
+### Design renders — Enzo FPV v3 (Full scale ~1:22.4 assembly, FreeCAD)
+
+| Isometric | Top view |
+|-----------|----------|
+| ![Enzo FPV v3 isometric](docs/images/render_enzo_fpv_v3.png) | ![Enzo FPV v3 top](docs/images/render_enzo_fpv_v3_top.png) |
+
 ### Design renders — Enzo FPV v2 (primary design, FreeCAD)
 
 | Isometric | Top view |
@@ -96,7 +102,8 @@ supercar/
 ├── firmware/
 │   └── FPV_Car_DFPlayer_AutoResume.ino
 ├── freecad/
-│   ├── Enzo_FPV_v2.py                    # v2 ground-up rebuild: 1:22.4 scale, dual N20, 8 modules (primary)
+│   ├── Enzo_FPV_v3.py                    # v3 full assembly (body, glass, camera, lamps, chassis, steering, wheels, electronics, audio, print plate)
+│   ├── Enzo_FPV_v2.py                    # v2 ground-up rebuild: 1:22.4 scale, dual N20, 8 modules
 │   ├── Ferrari_Enzo_Fixed_Assembly.py    # Alternative: flush glass, sloped headlights, market wheels (6 modules)
 │   ├── FPV_RC_Direct_Print_Plate.py      # Master print plate (15 parts flat at Z=0)
 │   ├── run_gui.py                        # GUI-mode batch runner → output/*.FCStd + *.stl

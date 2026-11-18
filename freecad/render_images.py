@@ -24,6 +24,8 @@ JOBS = [
     ("freecad/output/enzo_fpv_v2.FCStd", "render_enzo_fpv_v2_top", "top", 1920, 1200),
     ("freecad/output/ferrari_enzo_fixed.FCStd", "render_ferrari_enzo_fixed", "isometric", 1920, 1200),
     ("freecad/output/ferrari_enzo_fixed.FCStd", "render_ferrari_enzo_fixed_top", "top", 1920, 1200),
+    ("freecad/output/enzo_fpv_v3.FCStd", "render_enzo_fpv_v3", "isometric", 1920, 1200),
+    ("freecad/output/enzo_fpv_v3.FCStd", "render_enzo_fpv_v3_top", "top", 1920, 1200),
 ]
 
 VIEWS = {
